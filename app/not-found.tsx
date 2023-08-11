@@ -1,4 +1,4 @@
-import MainPanel from "../../../components/main-panel"
+import { MainPanel } from "@/components/panel"
 import { headers } from "next/headers"
 
 export default function NotFound()

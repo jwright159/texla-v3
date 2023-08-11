@@ -1,11 +1,9 @@
-"use client"
-
 import { useRouter } from "next/navigation"
 import { ReactNode, createContext, useContext, useEffect, useState, useTransition } from "react"
-import { useReferrer } from "../referrer"
-import { loginUser, registerUser } from "./user-server"
+import { useReferrer } from "../client/referrer"
+import { loginUser, registerUser } from "../server/user"
 import { filterErrors } from "./context"
-import { setUser, unsetUser, getUserId } from "./user-id-server"
+import { setUser, unsetUser, getUserId } from "../server/user-id"
 
 const UserIdContext = createContext<number| null>(null)
 const SetUserIdContext = createContext((id: number) => {})

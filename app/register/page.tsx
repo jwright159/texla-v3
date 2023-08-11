@@ -1,4 +1,4 @@
-import MainPanel from "@/components/main-panel"
+import { MainPanel } from "@/components/panel"
 import RegisterForm from "./register-form"
 import Link from "next/link"
 

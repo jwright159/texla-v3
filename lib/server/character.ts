@@ -1,5 +1,3 @@
-"use server"
-
 import { User } from "@prisma/client"
 
 export async function loginCharacter(id: number)
@@ -18,6 +16,7 @@ export async function registerCharacter(user: User, name: string)
 
 	const character = await prisma.character.create({ data: {
 		user: { connect: { id: user.id } },
+		name,
 	}})
 	
 	return character

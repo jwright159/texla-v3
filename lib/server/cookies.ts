@@ -1,5 +1,3 @@
-"use server"
-
 import { sealData, unsealData } from "iron-session"
 import { cookies } from "next/headers"
 

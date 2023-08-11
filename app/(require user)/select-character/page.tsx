@@ -1,4 +1,4 @@
-import MainPanel from "@/components/main-panel"
+import { MainPanel } from "@/components/panel"
 import LoginCharacterForm from "./login-character-form"
 import Link from "next/link"
 import LogoutButton from "./logout-button"

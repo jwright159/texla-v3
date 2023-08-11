@@ -1,9 +1,9 @@
 import { Server, Socket } from "socket.io"
-import prisma from "../prisma"
+import prisma from "../../client/prisma"
 import { createSubscriptionFromModelIncludingIds, createSubscriptionFromModel } from "./model-subscriptions"
 import { parse as parseCookie } from "cookie"
-import { parseUserId } from "../context/user-id-server"
-import { unsealCookieAgnostic } from "../cookies-server"
+import { parseUserId } from "../user-id"
+import { unsealCookieAgnostic } from "../cookies"
 
 let messageId = 0
 

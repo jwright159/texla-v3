@@ -2,8 +2,8 @@
 
 import { useState, useEffect, ReactNode, createContext, useContext } from "react"
 import { io, Socket } from "socket.io-client"
-import { useUserId } from "./context/user-id"
-import MainPanel from "@/components/main-panel"
+import { useUserId } from "./user-id"
+import { MainPanel } from "@/components/panel"
 
 const WebSocketContext = createContext<Socket | null>(null)
 

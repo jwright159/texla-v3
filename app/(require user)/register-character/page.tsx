@@ -1,6 +1,6 @@
-import MainPanel from "@/components/main-panel"
-import RegisterCharacterForm from "@/app/(logged in menu)/register-character/register-character-form"
+import { MainPanel } from "@/components/panel"
 import Link from "next/link"
+import RegisterCharacterForm from "./register-character-form"
 
 export default function RegisterCharacter()
 {

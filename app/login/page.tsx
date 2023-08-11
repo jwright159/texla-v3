@@ -1,5 +1,5 @@
 import LoginForm from "./login-form"
-import MainPanel from "@/components/main-panel"
+import { MainPanel } from "@/components/panel"
 import Link from "next/link"
 
 export default async function Login()

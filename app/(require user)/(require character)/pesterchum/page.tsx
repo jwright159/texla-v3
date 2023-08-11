@@ -1,15 +1,15 @@
 "use client"
 
 import MainPanel from "@/components/main-panel"
-import { usePlayerEntity } from "@/lib/context/entity"
-import { useWebSocket } from "@/lib/websocket"
+import { usePlayerCharacter } from "@/lib/context/character"
+import { useWebSocket } from "@/lib/client/websocket"
 import { useEffect, useState } from "react"
 
 export default function Pesterchum()
 {
 	const socket = useWebSocket()
 
-	const entity = usePlayerEntity()
+	const character = usePlayerCharacter()
 
 	const [messageText, setMessageText] = useState("")
 	const [messages, setMessages] = useState<{id: number, text: string}[]>([])
@@ -20,12 +20,12 @@ export default function Pesterchum()
 
 	useEffect(() =>
 	{
-		if (!entity) return
+		if (!character) return
 
 		socket.on("send-message", recieveMessage)
 		socket.on("join-chat", recieveJoin)
 		socket.on("leave-chat", recieveLeave)
-		socket.emit("join-chat", entity.name)
+		socket.emit("join-chat", character.name)
 
 		return () =>
 		{
@@ -34,18 +34,18 @@ export default function Pesterchum()
 			socket.off("join-chat", recieveJoin)
 			socket.off("leave-chat", recieveLeave)
 		}
-	}, [socket, entity?.id])
+	}, [socket, character?.id])
 
 	function submitMessage()
 	{
-		if (!entity || !messageText) return
-		socket.emit("send-message", {sender: entity.name, text: messageText})
+		if (!character || !messageText) return
+		socket.emit("send-message", {sender: character.name, text: messageText})
 		setMessageText("")
 	}
 
 	return (
 		<MainPanel title="Pesterchum?">
-			{entity ? <p>Logged in as {entity.name}</p> : <p>Logging in...</p>}
+			{character ? <p>Logged in as {character.name}</p> : <p>Logging in...</p>}
 
 			<div>
 				<input

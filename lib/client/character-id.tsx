@@ -2,12 +2,12 @@
 
 import { useRouter } from "next/navigation"
 import { ReactNode, createContext, useContext, useEffect, useState, useTransition } from "react"
-import { useReferrer } from "../referrer"
-import { loginCharacter, registerCharacter, deleteCharacter } from "./character-server"
+import { useReferrer } from "../client/referrer"
+import { loginCharacter, registerCharacter, deleteCharacter } from "../server/character"
 import { usePlayerUser } from "./user"
 import { filterErrors } from "./context"
 import { useUserId } from "./user-id"
-import { getCharacterId, setCharacter, unsetCharacter } from "./character-id-server"
+import { getCharacterId, setCharacter, unsetCharacter } from "../server/character-id"
 
 const CharacterIdContext = createContext<number| null>(null)
 const SetCharacterIdContext = createContext((id: number) => {})
@@ -38,7 +38,7 @@ export function useLoginCharacter()
 		})
 	}
 
-	function register(sessionName: string, characterName: string)
+	function register(characterName: string)
 	{
 		startTransition(async () =>
 		{

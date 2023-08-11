@@ -1,7 +1,5 @@
-"use server"
-
 import { Character } from "@prisma/client"
-import { unsealCookie, sealCookie } from "../cookies-server"
+import { unsealCookie, sealCookie } from "./cookies"
 
 export async function getCharacterId(userId: number): Promise<number>
 {

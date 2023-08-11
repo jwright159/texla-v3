@@ -1,7 +1,7 @@
 "use client"
 
-import MainPanel from "@/components/main-panel"
-import { usePlayerUser } from "@/lib/context/user"
+import { MainPanel } from "@/components/panel"
+import { usePlayerUser } from "@/lib/client/user"
 import { useRouter } from "next/navigation"
 import { ReactNode, useEffect } from "react"
 

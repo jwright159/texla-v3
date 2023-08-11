@@ -1,5 +1,3 @@
-"use server"
-
 import bcrypt from "bcrypt"
 
 export async function loginUser(username: string, password: string)

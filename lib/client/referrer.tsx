@@ -1,9 +1,7 @@
-"use client"
-
 import { ReactNode, createContext, useContext, useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
 
-const defaultReferrer = "/overview"
+const defaultReferrer = "/"
 
 const ReferrerContext = createContext(defaultReferrer)
 export const useReferrer = () => useContext(ReferrerContext)
@@ -23,8 +21,7 @@ export function ReferrerProvider({
 			pathname === "/login" ||
 			pathname === "/register" ||
 			pathname === "/select-character" ||
-			pathname === "/register-character" ||
-			pathname === "/register-session"
+			pathname === "/register-character"
 		))
 			setReferrer(pathname)
 	}, [pathname])

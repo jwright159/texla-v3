@@ -1,8 +1,6 @@
-"use server"
-
 import { User } from "@prisma/client"
-import { unsealCookie, sealCookie } from "../cookies-server"
-import prisma from "../prisma"
+import { unsealCookie, sealCookie } from "./cookies"
+import prisma from "../client/prisma"
 
 export async function getUserId(): Promise<number>
 {

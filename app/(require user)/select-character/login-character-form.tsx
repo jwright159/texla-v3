@@ -1,8 +1,7 @@
 "use client"
 
-import { usePlayerUser } from "@/lib/context/user"
+import { usePlayerUser } from "@/lib/client/user"
 import { useCharacter } from "@/lib/context/character"
-import { useEntity } from "@/lib/context/entity"
 import { useLoginCharacter } from "@/lib/context/character-id"
 
 export default function LoginCharacterForm()
@@ -36,11 +35,10 @@ function CharacterEntry({
 })
 {
 	const character = useCharacter(id)
-	const entity = useEntity(character?.entityId ?? 0)
 
-	return (character && entity ?
-			<p><input id={id.toString()} name="characterId" type="radio" value={character.id} disabled={disabled}/> <label htmlFor={character.id.toString()}>{entity.name}</label></p>
+	return (character ?
+		<p><input id={id.toString()} name="characterId" type="radio" value={character.id} disabled={disabled}/> <label htmlFor={character.id.toString()}>{character.name}</label></p>
 		:
-			<p>Loading character...</p>
+		<p>Loading character...</p>
 	)
 }

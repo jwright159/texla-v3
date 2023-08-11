@@ -1,6 +1,6 @@
 "use client"
 
-import { useWebSocket } from "../websocket"
+import { useWebSocket } from "./websocket"
 import { useCallback, useSyncExternalStore } from "react"
 
 export function createCache<T extends {id: number}>(table: string): [typeof useCachedValue, typeof useSetCachedValue]
