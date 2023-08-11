@@ -1,0 +1,51 @@
+diff --git a/node_modules/next/dist/server/lib/render-server-standalone.js b/node_modules/next/dist/server/lib/render-server-standalone.js
+index 640140d..96c8d96 100644
+--- a/node_modules/next/dist/server/lib/render-server-standalone.js
++++ b/node_modules/next/dist/server/lib/render-server-standalone.js
+@@ -74,7 +74,7 @@ const createServerHandler = async ({ port , hostname , dir , dev =false , minima
+         return proxyServer;
+     };
+     // proxy to router worker
+-    return async (req, res)=>{
++    return async (req, res, socket, head)=>{
+         const urlParts = (req.url || "").split("?");
+         const urlNoQuery = urlParts[0];
+         // this normalizes repeated slashes in the path e.g. hello//world ->
+@@ -101,7 +101,11 @@ const createServerHandler = async ({ port , hostname , dir , dev =false , minima
+         proxyServer.on("proxyRes", (proxyRes)=>{
+             res.on("close", ()=>proxyRes.destroy());
+         });
+-        proxyServer.web(req, res);
++        if (head) {
++            proxyServer.ws(req, socket, head)
++        } else {
++            proxyServer.web(req, res);
++        }
+         proxyServer.on("error", (err)=>{
+             res.statusCode = 500;
+             res.end("Internal Server Error");
+diff --git a/node_modules/next/dist/server/next.js b/node_modules/next/dist/server/next.js
+index 39d66f8..01f1de7 100644
+--- a/node_modules/next/dist/server/next.js
++++ b/node_modules/next/dist/server/next.js
+@@ -292,6 +292,20 @@ function createServer(options) {
+                                 };
+                             };
+                         }
++                    case "getUpgradeHandler":
++                        {
++                            return () => {
++                                let handler;
++                                return async (req, socket, head) => {
++                                    if (shouldUseStandaloneMode) {
++                                        const standaloneHandler = await handlerPromise;
++                                        return standaloneHandler(req, undefined, socket, head);
++                                    }
++                                    handler = handler || server.getUpgradeHandler();
++                                    return handler(req, socket, head);
++                                };
++                            }
++                        }
+                     case "render":
+                         {
+                             return async (req, res, pathname, query, parsedUrl)=>{
