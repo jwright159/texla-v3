@@ -38,7 +38,7 @@ const getNextCookie = () => cookies().get(cookieName)?.value ?? ""
 export async function sealNextCookie(data: CookieData)
 {
 	const cookie = await sealCookie(data, getNextCookie())
-	return `${cookieName}=${cookie}`
+	return `${cookieName}=${cookie}; Path=/`
 }
 export async function unsealNextCookie(): Promise<CookieData>
 {
