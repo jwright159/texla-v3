@@ -1,10 +1,10 @@
 "use client"
 
-import { useLoginCharacter } from "@/lib/context/character-id"
+import { useRegisterCharacter } from "@/lib/client/character-id"
 
 export default function RegisterCharacterForm()
 {
-	const {isPending, errorText, register} = useLoginCharacter()
+	const {isPending, errorText, register} = useRegisterCharacter()
 
 	return (
 		<form onSubmit={event =>

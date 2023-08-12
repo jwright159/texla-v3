@@ -1,48 +1,29 @@
 import { Server, Socket } from "socket.io"
-import prisma from "../../client/prisma"
+import prisma from "../prisma"
 import { createSubscriptionFromModelIncludingIds, createSubscriptionFromModel } from "./model-subscriptions"
-import { parse as parseCookie } from "cookie"
-import { parseUserId } from "../user-id"
-import { unsealCookieAgnostic } from "../cookies"
+import { registerRequests } from "./requests"
 
 let messageId = 0
 
-export default function setupWebSocket(io: Server, socket: Socket)
+export default function setupWebSocketServer(io: Server)
 {
-	console.log(`Connected ${socket.id}`)
-	socket.on("disconnect", () => console.log(`Disconnected ${socket.id}`))
+	io.on("connect", socket =>
+	{
+		console.log(`Connected ${socket.id}`)
+		socket.on("disconnect", () => console.log(`Disconnected ${socket.id}`))
 
-	registerAuthMessages(io, socket)
+		setupWebSocket(io, socket)
+	})
+}
 
+function setupWebSocket(io: Server, socket: Socket)
+{
 	createSubscriptionFromModelIncludingIds(io, socket, prisma, "user", {characters: "characterIds"})
 	createSubscriptionFromModel(io, socket, prisma, "character")
 
+	registerRequests(io, socket)
+
 	registerPesterchumMessages(io, socket)
-}
-
-function registerAuthMessages(io: Server, socket: Socket)
-{
-	// The only cookies available are from the initial connection. Reauthenticating requires reconnecting.
-
-	const cookieName = process.env.SESSION_COOKIE as string
-	
-	let attemptedAuth = false
-	let authenticated = false
-	socket.use(([event], next) => void (async () =>
-	{
-		if (!attemptedAuth)
-		{
-			const cookie = parseCookie(socket.handshake.headers.cookie ?? "")[cookieName]
-			const cookieData = await unsealCookieAgnostic(cookie)
-			const userId = await parseUserId(cookieData)
-			authenticated = !!userId
-		}
-		
-		if (authenticated)
-			next()
-		else
-			next(new Error("Invalid auth"))
-	})())
 }
 
 function registerPesterchumMessages(io: Server, socket: Socket)

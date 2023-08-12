@@ -1,7 +1,7 @@
 import { MainPanel } from "@/components/panel"
 import LoginCharacterForm from "./login-character-form"
 import Link from "next/link"
-import LogoutButton from "./logout-button"
+import LogoutButton from "../../login/logout-button"
 
 export default function SelectCharacter()
 {

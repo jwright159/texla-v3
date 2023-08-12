@@ -1,19 +1,19 @@
 "use client"
 
 import { usePlayerUser } from "@/lib/client/user"
-import { useCharacter } from "@/lib/context/character"
-import { useLoginCharacter } from "@/lib/context/character-id"
+import { useCharacter } from "@/lib/client/character"
+import { useSelectCharacter } from "@/lib/client/character-id"
 
 export default function LoginCharacterForm()
 {
-	const {isPending, errorText, login} = useLoginCharacter()
+	const {isPending, errorText, selectCharacter} = useSelectCharacter()
 	const user = usePlayerUser()!
 
 	return (user.characterIds.length ?
 			<form onSubmit={event => {
 				event.preventDefault()
 				const characterId = parseInt(event.currentTarget.characterId.value)
-				login(characterId)
+				selectCharacter(characterId)
 			}}>
 				{user.characterIds.map(id => <CharacterEntry key={id} id={id} disabled={isPending}/>)}
 

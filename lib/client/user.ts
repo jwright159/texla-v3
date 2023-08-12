@@ -8,7 +8,7 @@ export interface User extends UserModel {
 	characterIds: number[],
 }
 
-export const [useUser, useSetCharacter] = createCache<User>("user")
+export const [useUser, useSetUser] = createCache<User>("user")
 
 export const usePlayerUser = () =>
 {

@@ -1,40 +1,29 @@
 import { sealData, unsealData } from "iron-session"
 import { cookies } from "next/headers"
+import { Socket } from "socket.io"
+import { parse as parseCookie } from "cookie"
 
-const cookieName = process.env.SESSION_COOKIE as string
-const cookiePassword = process.env.SESSION_PASSWORD as string // 32 character password from https://1password.com/password-generator/
+export const cookieName = process.env.SESSION_COOKIE as string
+export const cookiePassword = process.env.SESSION_PASSWORD as string // 32 character password from https://1password.com/password-generator/
 
-interface CookieData
+export interface CookieData
 {
 	userId?: number,
 	password?: string,
 	characterId?: number,
 }
 
-const getCookie = () => cookies().get(cookieName)?.value ?? ""
-
-export async function sealCookie(data: CookieData)
-{
-	const cookie = await sealCookieAgnostic(data, getCookie())
-	cookies().set(cookieName, cookie)
-}
-
-export async function unsealCookie(): Promise<CookieData>
-{
-	return unsealCookieAgnostic(getCookie())
-}
-
-export async function sealCookieAgnostic(data: {}, currentCookie: string)
+export async function sealCookie(data: CookieData, currentCookie: string)
 {
 	if (!cookiePassword) throw new Error("Session password not set")
 	const cookie = await sealData({
-		...await unsealCookieAgnostic(currentCookie),
+		...await unsealCookie(currentCookie),
 		...data,
 	}, {password: cookiePassword})
 	return cookie
 }
 
-export async function unsealCookieAgnostic(cookie: string): Promise<{}>
+export async function unsealCookie(cookie: string): Promise<CookieData>
 {
 	if (!cookiePassword) throw new Error("Session password not set")
 	if (!cookie) return {}
@@ -43,4 +32,26 @@ export async function unsealCookieAgnostic(cookie: string): Promise<{}>
 	if (!cookieData || typeof cookieData !== "object") return {}
 
 	return cookieData
+}
+
+const getNextCookie = () => cookies().get(cookieName)?.value ?? ""
+export async function sealNextCookie(data: CookieData)
+{
+	const cookie = await sealCookie(data, getNextCookie())
+	return `${cookieName}=${cookie}`
+}
+export async function unsealNextCookie(): Promise<CookieData>
+{
+	return unsealCookie(getNextCookie())
+}
+
+const getSocketCookie = (socket: Socket) => parseCookie(socket.handshake.headers.cookie ?? "")[cookieName] ?? ""
+/* export async function sealSocketCookie(socket: Socket, data: CookieData)
+{
+	const cookie = await sealCookie(data, getSocketCookie(socket))
+	// ????
+} */
+export async function unsealSocketCookie(socket: Socket): Promise<CookieData>
+{
+	return unsealCookie(getSocketCookie(socket))
 }

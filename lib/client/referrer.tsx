@@ -1,10 +1,19 @@
+"use client"
+
 import { ReactNode, createContext, useContext, useEffect, useState } from "react"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 
 const defaultReferrer = "/"
 
 const ReferrerContext = createContext(defaultReferrer)
 export const useReferrer = () => useContext(ReferrerContext)
+
+export function useRedirectToReferrer()
+{
+	const router = useRouter()
+	const referrer = useReferrer()
+	return () => router.push(referrer)
+}
 
 export function ReferrerProvider({
 	children,
@@ -27,10 +36,8 @@ export function ReferrerProvider({
 	}, [pathname])
 
 	return (
-		<>
-			<ReferrerContext.Provider value={referrer}>
-				{children}
-			</ReferrerContext.Provider>
-		</>
+		<ReferrerContext.Provider value={referrer}>
+			{children}
+		</ReferrerContext.Provider>
 	)
 }

@@ -1,7 +1,8 @@
 "use client"
 
+import { WebSocketRequest, emit } from "../websocket-requests"
 import { useWebSocket } from "./websocket"
-import { useCallback, useSyncExternalStore } from "react"
+import { useCallback, useState, useSyncExternalStore } from "react"
 
 export function createCache<T extends {id: number}>(table: string): [typeof useCachedValue, typeof useSetCachedValue]
 {
@@ -57,12 +58,33 @@ export function createCache<T extends {id: number}>(table: string): [typeof useC
 	return [useCachedValue, useSetCachedValue]
 }
 
-export function filterErrors<T>(object: T | string, setErrorText: (text: string) => void)
+export function useWebSocketTransition<TArgs, TResponse>(request: WebSocketRequest<TArgs, TResponse>, onSuccess?: (args: TArgs, response: TResponse) => void): [boolean, string, (args: TArgs) => void]
 {
-	if (typeof object === "string")
+	const socket = useWebSocket()
+	const [isPending, setPending] = useState(false)
+	const [errorText, setErrorText] = useState("")
+
+	function startTransition(args: TArgs)
 	{
-		setErrorText(object)
-		return null
+		if (isPending) return "Transition still pending"
+		setPending(true)
+
+		function respond({
+			body,
+			error,
+		}: {
+			body?: TResponse,
+			error?: string,
+		})
+		{
+			setErrorText(error ?? "")
+			setPending(false)
+			if (!error && onSuccess)
+				onSuccess(args, body!)
+		}
+
+		emit(socket, request, args, respond)
 	}
-	return object
+
+	return [isPending, errorText, startTransition]
 }

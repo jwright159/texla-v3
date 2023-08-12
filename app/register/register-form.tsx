@@ -1,10 +1,10 @@
 "use client"
 
-import { useLoginUser } from "@/lib/context/user-id"
+import { useRegisterUser } from "@/lib/client/user-id"
 
 export default function RegisterForm()
 {
-	const {isPending, errorText, register} = useLoginUser()
+	const {isPending, errorText, register} = useRegisterUser()
 
 	return (
 		<form onSubmit={event => {

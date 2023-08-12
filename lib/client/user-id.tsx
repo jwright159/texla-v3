@@ -1,80 +1,120 @@
-import { useRouter } from "next/navigation"
-import { ReactNode, createContext, useContext, useEffect, useState, useTransition } from "react"
-import { useReferrer } from "../client/referrer"
-import { loginUser, registerUser } from "../server/user"
-import { filterErrors } from "./context"
-import { setUser, unsetUser, getUserId } from "../server/user-id"
+"use client"
 
-const UserIdContext = createContext<number| null>(null)
+import { ReactNode, createContext, useContext, useState, useTransition } from "react"
+import { useRedirectToReferrer } from "./referrer"
+import { useWebSocketTransition } from "./context"
+import { RegisterUserRequest, VerifyUserRequest } from "../websocket-requests"
+
+const UserIdContext = createContext<number>(0)
 const SetUserIdContext = createContext((id: number) => {})
 export const useUserId = () => useContext(UserIdContext)
-export function useLoginUser()
-{
-	const router = useRouter()
-	const referrer = useReferrer()
 
-	const setUserId = useContext(SetUserIdContext)
-	
+function useFinishLogin(): [boolean, string, ({}: {username: string, password: string}, id: number) => void]
+{
+	const redirect = useRedirectToReferrer()
+
 	const [errorText, setErrorText] = useState("")
 	const [isPending, startTransition] = useTransition()
+	const setUserId = useContext(SetUserIdContext)
 
-	function login(username: string, password: string)
+	async function finishLogin({username, password}: {username: string, password: string}, id: number)
 	{
-		startTransition(async () =>
-		{
-			const user = filterErrors(await loginUser(username, password), setErrorText)
-			if (!user) return
-			
-			setErrorText("")
-			await setUser(user)
-			setUserId(user.id)
-			router.push(referrer)
+		const response = await fetch("/api/login", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				username,
+				password,
+			}),
 		})
+
+		if (response.status === 200)
+		{
+			setErrorText("")
+			setUserId(id)
+			redirect()
+		}
+		else
+		{
+			setErrorText(await response.text())
+		}
 	}
 
-	function register(username: string, password: string)
-	{
-		startTransition(async () =>
-		{
-			const user = filterErrors(await registerUser(username, password), setErrorText)
-			if (!user) return;
-			
-			setErrorText("")
-			await setUser(user)
-			setUserId(user.id)
-			router.push(referrer)
-		})
-	}
-
-	return {isPending, errorText, login, register}
+	return [isPending, errorText, (args, id) => startTransition(() => finishLogin(args, id))]
 }
+
+function useFinishLogout(): [boolean, string, () => void]
+{
+	const redirect = useRedirectToReferrer()
+
+	const [errorText, setErrorText] = useState("")
+	const [isPending, startTransition] = useTransition()
+	const [isRedirecting, setIsRedirecting] = useState(false)
+	const setUserId = useContext(SetUserIdContext)
+
+	async function finishLogout()
+	{
+		const response = await fetch("/api/logout", {
+			method: "POST",
+		})
+
+		if (response.status === 200)
+		{
+			setErrorText("")
+			setUserId(0)
+			setIsRedirecting(true)
+			redirect()
+		}
+		else
+		{
+			setErrorText(await response.text())
+		}
+	}
+
+	return [isPending || isRedirecting, errorText, () => startTransition(() => finishLogout())]
+}
+
+export function useLoginUser()
+{
+	const [isLoginPending, loginErrorText, finishLogin] = useFinishLogin()
+	const [isVerifyPending, verifyErrorText, login] = useWebSocketTransition(VerifyUserRequest, finishLogin)
+
+	return {
+		isPending: isVerifyPending || isLoginPending,
+		errorText: verifyErrorText || loginErrorText,
+		login: (username: string, password: string) => login({username, password})
+	}
+}
+
+export function useRegisterUser()
+{
+	const [isLoginPending, loginErrorText, finishLogin] = useFinishLogin()
+	const [isRegPending, regErrorText, register] = useWebSocketTransition(RegisterUserRequest, finishLogin)
+
+	return {
+		isPending: isRegPending || isLoginPending,
+		errorText: regErrorText || loginErrorText,
+		register: (username: string, password: string) => register({username, password})
+	}
+}
+
 export function useLogoutUser()
 {
-	const setUserId = useContext(SetUserIdContext)
-	
-	const [isPending, startTransition] = useTransition()
-
-	function logout()
-	{
-		startTransition(async () =>
-		{
-			await unsetUser()
-			setUserId(0)
-		})
-	}
-
-	return {isPending, logout}
+	const [isPending, errorText, finishLogout] = useFinishLogout()
+	return {isPending, errorText, logout: finishLogout}
 }
 
 export function UserIdProvider({
 	children,
+	initialId,
 }: {
 	children: ReactNode,
+	initialId: number,
 })
 {
-	const [userId, setUserId] = useState<number | null>(null)
-
-	useEffect(() => void (async () => setUserId(await getUserId()))(), [])
+	const [userId, setUserId] = useState<number>(initialId)
 
 	return (
 		<UserIdContext.Provider value={userId}>

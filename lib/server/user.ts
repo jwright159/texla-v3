@@ -1,14 +1,18 @@
 import bcrypt from "bcrypt"
+import prisma from "./prisma"
 
-export async function loginUser(username: string, password: string)
+export async function verifyUser(username: string, password: string)
 {
+	if (typeof username !== "string") return "Username must be a string"
+	if (typeof password !== "string") return "Password must be a string"
+
 	const user = await prisma.user.findUnique({ where: { username } })
 	if (!user) return "Wrong username or password"
 
 	const passwordCorrect = await bcrypt.compare(password, user.password)
 	if (!passwordCorrect) return "Wrong username or password"
 	
-	return user
+	return user.id
 }
 
 export async function registerUser(username: string, password: string)
@@ -27,5 +31,25 @@ export async function registerUser(username: string, password: string)
 		password: passwordHash,
 	}})
 
-	return user
+	return user.id
+}
+
+export async function parseUserId(cookieData: any)
+{
+	if (!cookieData) return 0
+
+	const { userId, password } = cookieData
+
+	if (!userId || typeof userId !== "number") return 0
+	if (!password || typeof password !== "string") return 0
+
+	const user = await prisma.user.findUnique({
+		where: {
+			id: userId,
+			password
+		}
+	})
+	if (!user) return 0
+
+	return userId
 }
