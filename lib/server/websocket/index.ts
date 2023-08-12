@@ -2,6 +2,7 @@ import { Server, Socket } from "socket.io"
 import prisma from "../prisma"
 import { createSubscriptionFromModelIncludingIds, createSubscriptionFromModel } from "./model-subscriptions"
 import { registerRequests } from "./requests"
+import registerUserNamespace from "./user"
 
 let messageId = 0
 
@@ -14,6 +15,8 @@ export default function setupWebSocketServer(io: Server)
 
 		setupWebSocket(io, socket)
 	})
+
+	registerUserNamespace(io)
 }
 
 function setupWebSocket(io: Server, socket: Socket)
