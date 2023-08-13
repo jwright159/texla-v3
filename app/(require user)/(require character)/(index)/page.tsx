@@ -4,9 +4,8 @@ import LogoutButton from "../../../login/logout-button"
 import LogoutCharacterButton from "../../select-character/logout-character-button"
 import { useCharacter, usePlayerCharacter } from "@/lib/client/character"
 import { usePlayerRoom } from "@/lib/client/room"
-import { ReactElement, useState } from "react"
+import { ReactElement, useEffect, useRef, useState } from "react"
 import styles from "./page.module.css"
-import { useCharacterId } from "@/lib/client/character-id"
 
 export default function Index()
 {
@@ -21,25 +20,55 @@ export default function Index()
 
 	const [input, setInput] = useState("")
 
+	const scrollTo = useRef<HTMLDivElement>(null)
+	useEffect(() => scrollTo.current!.scrollIntoView(), [nodes])
+
+	function addTextToBox()
+	{
+		if (!input) return
+		setNodes(nodes => [...nodes, <div className={styles.command} key={nodeCount}>&gt;{input}</div>])
+		setNodeCount(count => count + 1)
+		setInput("")
+	}
+
 	return (
-		<main>
-			<h1>You are in <span style={{fontFamily: "monospace"}}>{room?.name ?? "null"}</span></h1>
+		<main className={styles.main}>
+			<h1 className={styles.header}>You are in <span style={{fontFamily: "monospace"}}>{room?.name ?? "null"}</span></h1>
+
 			<div className={styles.game}>
-				<ul className={styles.gameBox}>
-					{nodes.map(node => <li key={node.key}>{node}</li>)}
-				</ul>
+				<div className={styles.gameBox}>
+					<ul className={styles.nodes}>
+						{nodes.map(node => <li key={node.key} className={styles.node}>{node}</li>)}
+					</ul>
+					<div ref={scrollTo}></div>
+				</div>
+
 				<div className={styles.inputWrapper}>
 					<input
 						value={input}
 						onChange={event => setInput(event.target.value)}
+						onKeyDown={event =>
+						{
+							if (event.key === "Enter")
+							{
+								event.preventDefault()
+								addTextToBox()
+							}
+						}}
 						className={styles.input}
 						placeholder="Input command..."
 					></input>
-					<button className={styles.submitButton}>→</button>
+					<button
+						className={styles.submitButton}
+						onClick={addTextToBox}
+					>→</button>
 				</div>
 			</div>
-			<LogoutButton/>
-			<LogoutCharacterButton/>
+
+			<div>
+				<LogoutButton/>
+				<LogoutCharacterButton/>
+			</div>
 		</main>
 	)
 }
@@ -70,6 +99,6 @@ function CharacterItem({
 {
 	const character = useCharacter(id)
 	return (
-		<li>{character?.name}</li>
+		<li>{character?.name ?? "Loading character..."}</li>
 	)
 }

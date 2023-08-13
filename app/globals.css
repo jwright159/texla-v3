@@ -1,7 +1,16 @@
-* {
+*
+{
 	box-sizing: border-box;
 }
 
-body {
-	background-attachment: fixed;
+html
+{
+	height: 100%;
+}
+
+body
+{
+	margin: 0;
+	padding: 0 8px;
+	height: 100%;
 }

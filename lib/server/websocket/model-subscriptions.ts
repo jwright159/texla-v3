@@ -87,18 +87,30 @@ export function createSubscription<T extends {id: number}>(
 	{
 		listeners[id] = (listeners[id] ?? 0) + 1
 		if (listeners[id] === 1) socket.join(`update-${table}-${id}`)
-		socket.emit(`update-${table}`, await findUnique(id))
+
+		const value = await findUnique(id)
+		cleanPassword(value)
+		socket.emit(`update-${table}-${id}`, {id, value})
 	})
 
 	socket.on(`unsubscribe-${table}`, (id: number) =>
 	{
-		listeners[id] = Math.max((listeners[id] ?? 0) - 1, 0)
+		listeners[id] = (listeners[id] ?? 0) - 1
 		if (listeners[id] === 0) socket.leave(`update-${table}-${id}`)
 	})
 
 	socket.on(`update-${table}`, async (value: T, callback: () => void) =>
 	{
-		io.in(`update-${table}-${value.id}`).emit(`update-${table}`, await update(value.id, value))
+		const id = value.id
+		cleanPassword(value)
+		value = await update(id, value)
+		cleanPassword(value)
+		io.in(`update-${table}-${value.id}`).emit(`update-${table}-${id}`, {id, value})
 		callback()
 	})
+}
+
+function cleanPassword(data: any)
+{
+	if (data && 'password' in data) delete data.password
 }

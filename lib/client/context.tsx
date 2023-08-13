@@ -7,30 +7,51 @@ import { useCallback, useState, useSyncExternalStore } from "react"
 export function createCache<T extends {id: number}>(table: string): [typeof useCachedValue, typeof useSetCachedValue]
 {
 	const cache: Record<number, T | null> = {}
+	const cacheSubscribers: Record<number, number> = {}
 
 	function useCachedValue(id: number | null): T | null
 	{
 		const socket = useWebSocket()
 
+		function incrementSubscribers(id: number, cacheResult: (args: {id: number, value: T | null}) => void)
+		{
+			cacheSubscribers[id] = (cacheSubscribers[id] ?? 0) + 1
+			if (cacheSubscribers[id] === 1)
+			{
+				socket.on(`update-${table}-${id}`, cacheResult)
+				socket.emit(`subscribe-${table}`, id)
+			}
+		}
+
+		function decrementSubscribers(id: number, cacheResult: (args: {id: number, value: T | null}) => void)
+		{
+			cacheSubscribers[id] = (cacheSubscribers[id] ?? 0) - 1
+			if (cacheSubscribers[id] === 0)
+			{
+				socket.off(`update-${table}-${id}`, cacheResult)
+				socket.emit(`unsubscribe-${table}`, id)
+			}
+		}
+
 		const subscribe = useCallback((callback: () => void) =>
 		{
 			if (!id) return () => {}
 
-			function cacheResult(value: T | null)
+			function cacheResult({
+				id,
+				value,
+			}: {
+				id: number,
+				value: T | null,
+			})
 			{
-				if (cache[id!] && JSON.stringify(value) === JSON.stringify(cache[id!])) return
-				cache[id!] = value
+				if (cache[id] && JSON.stringify(value) === JSON.stringify(cache[id])) return
+				cache[id] = value
 				callback()
 			}
 
-			socket.on(`update-${table}`, cacheResult)
-			socket.emit(`subscribe-${table}`, id)
-
-			return () =>
-			{
-				socket.off(`update-${table}`, cacheResult)
-				socket.emit(`unsubscribe-${table}`, id)
-			}
+			incrementSubscribers(id, cacheResult)
+			return () => decrementSubscribers(id, cacheResult)
 		}, [socket, id])
 
 		function getSnapshot(): T | null
