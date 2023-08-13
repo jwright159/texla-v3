@@ -4,7 +4,7 @@ import LogoutButton from "../../../login/logout-button"
 import LogoutCharacterButton from "../../select-character/logout-character-button"
 import { useCharacter, usePlayerCharacter } from "@/lib/client/character"
 import { usePlayerRoom } from "@/lib/client/room"
-import { ReactElement, ReactNode, useCallback, useEffect, useRef, useState } from "react"
+import { ReactElement, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import styles from "./page.module.css"
 import { usePlayerUser } from "@/lib/client/user"
 import { useWebSocket } from "@/lib/client/websocket"
@@ -12,25 +12,19 @@ import { Socket } from "socket.io-client"
 
 export default function Index()
 {
-	const socket = useWebSocket()
-
 	const user = usePlayerUser()!
 	const character = usePlayerCharacter()!
 	const room = usePlayerRoom()
 
-	const [nodes, setNodes] = useState<ReactElement[]>([])
-	const [nodeCount, setNodeCount] = useState(nodes.length)
+	const [nodes, addNode] = useNodeList()
 
-	const [input, setInput] = useState("")
+	const socket = useWebSocket()
+	registerSocketCommands(socket, addNode)
 
 	const scrollTo = useRef<HTMLDivElement>(null)
 	useEffect(() => scrollTo.current!.scrollIntoView(), [nodes])
 
-	function addNode(node: ReactNode)
-	{
-		setNodes(nodes => [...nodes, <div key={nodeCount}>{node}</div>])
-		setNodeCount(count => count + 1)
-	}
+	const [input, setInput] = useState("")
 
 	function sendCommand()
 	{
@@ -39,35 +33,6 @@ export default function Index()
 		socket.emit("command", input)
 		setInput("")
 	}
-
-	const commands: Record<string, (args: string) => void> = {
-		"unknown-command": (text: string) =>
-		{
-			addNode(text)
-		},
-
-		echo: (text: string) =>
-		{
-			addNode(text)
-		},
-	}
-
-	function registerCommands(socket: Socket, commands: Record<string, (args: string) => void>)
-	{
-		Object.entries(commands).forEach(([name, command]) => socket.on(name, command))
-	}
-
-	function unregisterCommands(socket: Socket, commands: Record<string, (args: string) => void>)
-	{
-		Object.entries(commands).forEach(([name, command]) => socket.off(name, command))
-	}
-
-	useEffect(() =>
-	{
-		const localCommands = commands // just in case "commands" ends up being something different by the time it unregisters
-		registerCommands(socket, localCommands)
-		return () => unregisterCommands(socket, localCommands)
-	}, [socket])
 
 	return (
 		<main className={styles.main}>
@@ -139,4 +104,47 @@ function CharacterItem({
 	return (
 		<li>{character?.name ?? "Loading character..."}</li>
 	)
+}
+
+function useNodeList(): [typeof nodes, typeof addNode]
+{
+	const [nodes, setNodes] = useState<ReactElement[]>([])
+	const nodeCount = useRef(0)
+
+	const addNode = useCallback((item: ReactNode) =>
+	{
+		setNodes(nodes => [...nodes, <div key={nodeCount.current}>{item}</div>])
+		nodeCount.current++
+	}, [])
+
+	return [nodes, addNode]
+}
+
+function registerSocketCommands(socket: Socket, addNode: (node: ReactNode) => void)
+{
+	const commands: Record<string, (args: string) => void> = useMemo(() => ({
+		"unknown-command": (text: string) =>
+		{
+			addNode(text)
+		},
+
+		echo: (text: string) =>
+		{
+			addNode(text)
+		},
+	}), [])
+
+	useEffect(() =>
+	{
+		{
+			console.log("Registering commands")
+			Object.entries(commands).forEach(([name, command]) => socket.on(name, command))
+		}
+
+		return () =>
+		{
+			console.log("Unregistering commands")
+			Object.entries(commands).forEach(([name, command]) => socket.off(name, command))
+		}
+	}, [socket, commands])
 }
