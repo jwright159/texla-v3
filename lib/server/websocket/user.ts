@@ -11,7 +11,7 @@ function registerAuth(io: Server, socket: Socket)
 {
 	let attemptedAuth = false;
 	let authenticated = false;
-	socket.use(([event, args, callback], next) => void (async () =>
+	socket.use(([event], next) => void (async () =>
 	{
 		if (!attemptedAuth)
 		{
@@ -26,10 +26,6 @@ function registerAuth(io: Server, socket: Socket)
 		))
 			next()
 		else
-		{
-			if (callback && typeof callback === "function")
-				callback({error: "Invalid auth"})
 			next(new Error("Invalid auth"))
-		}
 	})())
 }
