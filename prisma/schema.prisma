@@ -13,6 +13,7 @@ model User {
 	password String
 
 	characters Character[]
+	rooms Room[]
 }
 
 model Character {
@@ -21,4 +22,17 @@ model Character {
 	userId Int
 
 	name String
+
+	room Room @relation(fields: [roomId], references: [id])
+	roomId Int @default(1)
+}
+
+model Room {
+	id Int @id @default(autoincrement())
+	user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+	userId Int
+
+	name String
+
+	characters Character[]
 }

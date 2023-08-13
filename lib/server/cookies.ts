@@ -46,11 +46,6 @@ export async function unsealNextCookie(): Promise<CookieData>
 }
 
 const getSocketCookie = (socket: Socket) => parseCookie(socket.handshake.headers.cookie ?? "")[cookieName] ?? ""
-/* export async function sealSocketCookie(socket: Socket, data: CookieData)
-{
-	const cookie = await sealCookie(data, getSocketCookie(socket))
-	// ????
-} */
 export async function unsealSocketCookie(socket: Socket): Promise<CookieData>
 {
 	return unsealCookie(getSocketCookie(socket))

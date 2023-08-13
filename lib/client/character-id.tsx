@@ -9,7 +9,7 @@ const CharacterIdContext = createContext<number>(0)
 const SetCharacterIdContext = createContext((id: number) => {})
 export const useCharacterId = () => useContext(CharacterIdContext)
 
-function useFinishSelectCharacter(): [boolean, string, ({}: {}, id: number) => void]
+function useFinishSelectCharacter(): [boolean, string, (args: {}, id: number) => void]
 {
 	const redirect = useRedirectToReferrer()
 
@@ -18,7 +18,7 @@ function useFinishSelectCharacter(): [boolean, string, ({}: {}, id: number) => v
 	const [isRedirecting, setIsRedirecting] = useState(false)
 	const setCharacterId = useContext(SetCharacterIdContext)
 
-	async function select({}: {}, id: number)
+	async function select(args: {}, id: number)
 	{
 		const response = await fetch("/api/select-character", {
 			method: "POST",

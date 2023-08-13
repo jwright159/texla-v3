@@ -1,0 +1,36 @@
+.game
+{
+	margin: 8px;
+	display: flex;
+	flex-direction: column;
+	row-gap: 8px;
+}
+
+.gameBox, .input
+{
+	border: black 1px solid;
+	border-radius: 5px;
+	flex-grow: 1;
+}
+
+.gameBox
+{
+	display: flex;
+	flex-direction: column;
+	overflow-y: scroll;
+	height: 20em;
+	row-gap: 8px;
+	padding: 8px;
+}
+
+.inputWrapper
+{
+	display: flex;
+	column-gap: 8px;
+}
+
+.input
+{
+	display: block;
+	padding: 4px 8px;
+}

@@ -34,7 +34,6 @@ export function WebSocketProvider({
 			console.log(`Disconnected, ${reason}`)
 			setConnected(false)
 		})
-		socket.onAny((event) => console.log(event))
 
 		return () =>
 		{

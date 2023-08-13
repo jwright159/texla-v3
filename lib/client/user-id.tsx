@@ -9,7 +9,7 @@ const UserIdContext = createContext<number>(0)
 const SetUserIdContext = createContext((id: number) => {})
 export const useUserId = () => useContext(UserIdContext)
 
-function useFinishLogin(): [boolean, string, ({}: {username: string, password: string}, id: number) => void]
+function useFinishLogin(): [boolean, string, (args: {username: string, password: string}, id: number) => void]
 {
 	const redirect = useRedirectToReferrer()
 

@@ -6,7 +6,7 @@ import { useCallback, useState, useSyncExternalStore } from "react"
 
 export function createCache<T extends {id: number}>(table: string): [typeof useCachedValue, typeof useSetCachedValue]
 {
-	const cache: Record<number, T> = {}
+	const cache: Record<number, T | null> = {}
 
 	function useCachedValue(id: number | null): T | null
 	{
@@ -16,9 +16,10 @@ export function createCache<T extends {id: number}>(table: string): [typeof useC
 		{
 			if (!id) return () => {}
 
-			function cacheResult(value: T)
+			function cacheResult(value: T | null)
 			{
-				cache[value.id] = value
+				if (cache[id!] && JSON.stringify(value) === JSON.stringify(cache[id!])) return
+				cache[id!] = value
 				callback()
 			}
 

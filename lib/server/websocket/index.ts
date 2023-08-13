@@ -21,8 +21,9 @@ export default function setupWebSocketServer(io: Server)
 
 function setupWebSocket(io: Server, socket: Socket)
 {
-	createSubscriptionFromModelIncludingIds(io, socket, prisma, "user", {characters: "characterIds"})
+	createSubscriptionFromModelIncludingIds(io, socket, prisma, "user", {characters: "characterIds", rooms: "roomIds"})
 	createSubscriptionFromModel(io, socket, prisma, "character")
+	createSubscriptionFromModelIncludingIds(io, socket, prisma, "room", {characters: "characterIds"})
 
 	registerRequests(io, socket)
 

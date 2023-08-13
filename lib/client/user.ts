@@ -6,6 +6,7 @@ import { useUserId } from "./user-id"
 
 export interface User extends UserModel {
 	characterIds: number[],
+	roomIds: number[],
 }
 
 export const [useUser, useSetUser] = createCache<User>("user")
