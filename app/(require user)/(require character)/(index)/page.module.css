@@ -15,16 +15,29 @@
 {
 	margin: 8px;
 	display: flex;
-	flex-direction: column;
-	row-gap: 8px;
+	flex-direction: row;
+	gap: 8px;
 	flex-grow: 1;
 }
 
-.gameBox, .input
+.messages
+{
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	flex-grow: 3;
+}
+
+.characters
+{
+	flex-grow: 1;
+	max-width: 13em;
+}
+
+.bordered
 {
 	border: black 1px solid;
 	border-radius: 5px;
-	flex-grow: 1;
 	font-family: Courier, monospace;
 }
 
@@ -32,13 +45,14 @@
 {
 	overflow-y: scroll;
 	height: 10em;
+	flex-grow: 1;
 }
 
 .nodes
 {
 	display: flex;
 	flex-direction: column;
-	row-gap: 8px;
+	gap: 8px;
 	margin: 0;
 	padding: 8px;
 }
@@ -58,6 +72,7 @@
 {
 	display: block;
 	padding: 4px 8px;
+	flex-grow: 1;
 }
 
 .command
