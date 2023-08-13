@@ -4,12 +4,16 @@ import LogoutButton from "../../../login/logout-button"
 import LogoutCharacterButton from "../../select-character/logout-character-button"
 import { useCharacter, usePlayerCharacter } from "@/lib/client/character"
 import { usePlayerRoom } from "@/lib/client/room"
-import { ReactElement, useEffect, useRef, useState } from "react"
+import { ReactElement, ReactNode, useCallback, useEffect, useRef, useState } from "react"
 import styles from "./page.module.css"
 import { usePlayerUser } from "@/lib/client/user"
+import { useWebSocket } from "@/lib/client/websocket"
+import { Socket } from "socket.io-client"
 
 export default function Index()
 {
+	const socket = useWebSocket()
+
 	const user = usePlayerUser()!
 	const character = usePlayerCharacter()!
 	const room = usePlayerRoom()
@@ -22,13 +26,48 @@ export default function Index()
 	const scrollTo = useRef<HTMLDivElement>(null)
 	useEffect(() => scrollTo.current!.scrollIntoView(), [nodes])
 
-	function addTextToBox()
+	function addNode(node: ReactNode)
+	{
+		setNodes(nodes => [...nodes, <div key={nodeCount}>{node}</div>])
+		setNodeCount(count => count + 1)
+	}
+
+	function sendCommand()
 	{
 		if (!input) return
-		setNodes(nodes => [...nodes, <div className={styles.command} key={nodeCount}>&gt;{input}</div>])
-		setNodeCount(count => count + 1)
+		addNode(<span className={styles.command}>&gt;{input}</span>)
+		socket.emit("command", input)
 		setInput("")
 	}
+
+	const commands: Record<string, (args: string) => void> = {
+		"unknown-command": (text: string) =>
+		{
+			addNode(text)
+		},
+
+		echo: (text: string) =>
+		{
+			addNode(text)
+		},
+	}
+
+	function registerCommands(socket: Socket, commands: Record<string, (args: string) => void>)
+	{
+		Object.entries(commands).forEach(([name, command]) => socket.on(name, command))
+	}
+
+	function unregisterCommands(socket: Socket, commands: Record<string, (args: string) => void>)
+	{
+		Object.entries(commands).forEach(([name, command]) => socket.off(name, command))
+	}
+
+	useEffect(() =>
+	{
+		const localCommands = commands // just in case "commands" ends up being something different by the time it unregisters
+		registerCommands(socket, localCommands)
+		return () => unregisterCommands(socket, localCommands)
+	}, [socket])
 
 	return (
 		<main className={styles.main}>
@@ -52,7 +91,7 @@ export default function Index()
 								if (event.key === "Enter")
 								{
 									event.preventDefault()
-									addTextToBox()
+									sendCommand()
 								}
 							}}
 							className={[styles.input, styles.bordered].join(" ")}
@@ -60,7 +99,7 @@ export default function Index()
 						></input>
 						<button
 							className={styles.submitButton}
-							onClick={addTextToBox}
+							onClick={sendCommand}
 						>→</button>
 					</div>
 				</div>
