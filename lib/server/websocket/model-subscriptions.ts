@@ -1,4 +1,4 @@
-import { Server, ServerSocket, SubscribeEvent, UnsubscribeEvent, UpdateEvent, UpdateRoom } from "../../websocket-events"
+import { FetchEvent, Server, ServerSocket, SubscribeEvent, UnsubscribeEvent, UpdateEvent, UpdateRoom } from "../../websocket-events"
 import { PrismaClient } from "@prisma/client"
 
 export type PrismaTable<Original, Include, IncludeResult> = {
@@ -121,6 +121,13 @@ export function createSubscription<
 	{
 		listeners[id] = (listeners[id] ?? 0) - 1
 		if (listeners[id] === 0) socket.leave(UpdateRoom(table, id))
+	})
+
+	socket.onPermanentAsync(FetchEvent<TOutput>(table), async ({id}) =>
+	{
+		const value = await findUnique(id)
+		const selectedValue = value !== null && selectOutput ? selectOutput(value) : null
+		return {body: {value: selectedValue}}
 	})
 
 	/*onPermanentAsync(`update-${table}`, async (value: T, callback: () => void) =>

@@ -4,7 +4,7 @@ import { User } from "../context"
 import { createCache } from "./context"
 import { useUserId } from "./user-id"
 
-export const useUser = createCache<User>("user")
+export const [useUser, fetchUser] = createCache<User>("user")
 
 export const usePlayerUser = () =>
 {

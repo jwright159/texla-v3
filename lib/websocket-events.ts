@@ -5,6 +5,8 @@ import { DefaultEventsMap } from "socket.io/dist/typed-events"
 
 export interface WebSocketEvent<TArgs, TResponse> {
 	event: string;
+	_args: TArgs,
+	_response: TResponse,
 	_listener: (args: TArgs) => TResponse,
 }
 
@@ -38,6 +40,10 @@ export const SubscribeEvent = (table: string) => <ClientWebSocketEvent<{id: numb
 
 export const UnsubscribeEvent = (table: string) => <ClientWebSocketEvent<{id: number}>>{
 	event: `unsubscribe-${table}`,
+}
+
+export const FetchEvent = <T>(table: string) => <ClientWebSocketEvent<{id: number}, {value: T | null}>>{
+	event: `fetch-${table}`,
 }
 
 export const UpdateEvent = <T>(table: string, id: number) => <ServerWebSocketEvent<{id: number, value: T | null}>>{

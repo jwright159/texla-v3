@@ -2,11 +2,11 @@
 
 import LogoutButton from "../../../login/logout-button"
 import LogoutCharacterButton from "../../select-character/logout-character-button"
-import { useCharacter, usePlayerCharacter } from "@/lib/client/character"
+import { fetchCharacter, useCharacter, usePlayerCharacter } from "@/lib/client/character"
 import { usePlayerRoom } from "@/lib/client/room"
 import { ReactElement, ReactNode, useCallback, useEffect, useRef, useState } from "react"
 import styles from "./page.module.css"
-import { usePlayerUser } from "@/lib/client/user"
+import { fetchUser, usePlayerUser } from "@/lib/client/user"
 import { useWebSocket } from "@/lib/client/websocket"
 import { ClientSocket, CommandEvent, EchoEvent, HelpEvent, JoinClientEvent, JoinServerEvent, LeaveClientEvent, LeaveServerEvent, SayEvent, UnknownCommandEvent, useEvent } from "@/lib/websocket-events"
 
@@ -130,9 +130,9 @@ function registerSocketCommands(socket: ClientSocket, addNode: (node: ReactNode)
 
 	useEvent(socket, HelpEvent, ({commands}) => addNode(<span className={styles.help}>{commands.join(" ")}</span>))
 
-	useEvent(socket, JoinServerEvent, ({id}) => addNode(`${id} joined`))
+	useEvent(socket, JoinServerEvent, ({id}) => fetchCharacter(socket, id).then(character => addNode(`${character?.name} joined`)))
 
-	useEvent(socket, LeaveServerEvent, ({id}) => addNode(`${id} left`))
+	useEvent(socket, LeaveServerEvent, ({id}) => fetchCharacter(socket, id).then(character => addNode(`${character?.name} left`)))
 
 	useEffect(() =>
 	{

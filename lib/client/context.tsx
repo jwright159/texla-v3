@@ -1,35 +1,51 @@
 "use client"
 
-import { ClientWebSocketEvent, SubscribeEvent, UnsubscribeEvent, UpdateEvent } from "../websocket-events"
+import { ClientSocket, ClientWebSocketEvent, FetchEvent, SubscribeEvent, UnsubscribeEvent, UpdateEvent } from "../websocket-events"
 import { useWebSocket } from "./websocket"
 import { useCallback, useState, useSyncExternalStore } from "react"
 
 export function createCache<T extends {id: number}>(table: string)
 {
 	const cache: Record<number, T | null> = {}
-	const cacheSubscribers: Record<number, number> = {}
+	const cacheSubscriberCounts: Record<number, number> = {}
+	const cacheCallbacks: Record<number, () => void> = {}
+
+	function cacheResult({
+		id,
+		value,
+	}: {
+		id: number,
+		value: T | null,
+	})
+	{
+		if (cache[id] && JSON.stringify(value) === JSON.stringify(cache[id])) return
+		cache[id] = value
+		if (cacheCallbacks[id]) cacheCallbacks[id]()
+	}
 
 	function useCachedValue(id: number | null): T | null
 	{
 		const socket = useWebSocket()
 
-		function incrementSubscribers(id: number, cacheResult: ReturnType<typeof UpdateEvent<T>>["_listener"])
+		function incrementSubscribers(id: number, callback: () => void)
 		{
-			cacheSubscribers[id] = (cacheSubscribers[id] ?? 0) + 1
-			if (cacheSubscribers[id] === 1)
+			cacheSubscriberCounts[id] = (cacheSubscriberCounts[id] ?? 0) + 1
+			if (cacheSubscriberCounts[id] === 1)
 			{
 				socket.on(UpdateEvent<T>(table, id), cacheResult)
 				socket.emit(SubscribeEvent(table), {id})
+				cacheCallbacks[id] = callback
 			}
 		}
 
-		function decrementSubscribers(id: number, cacheResult: ReturnType<typeof UpdateEvent<T>>["_listener"])
+		function decrementSubscribers(id: number)
 		{
-			cacheSubscribers[id] = (cacheSubscribers[id] ?? 0) - 1
-			if (cacheSubscribers[id] === 0)
+			cacheSubscriberCounts[id] = (cacheSubscriberCounts[id] ?? 0) - 1
+			if (cacheSubscriberCounts[id] === 0)
 			{
 				socket.off(UpdateEvent<T>(table, id), cacheResult)
 				socket.emit(UnsubscribeEvent(table), {id})
+				delete cacheCallbacks[id]
 			}
 		}
 
@@ -37,21 +53,8 @@ export function createCache<T extends {id: number}>(table: string)
 		{
 			if (!id) return () => {}
 
-			function cacheResult({
-				id,
-				value,
-			}: {
-				id: number,
-				value: T | null,
-			})
-			{
-				if (cache[id] && JSON.stringify(value) === JSON.stringify(cache[id])) return
-				cache[id] = value
-				callback()
-			}
-
-			incrementSubscribers(id, cacheResult)
-			return () => decrementSubscribers(id, cacheResult)
+			incrementSubscribers(id, callback)
+			return () => decrementSubscribers(id)
 		}, [socket, id])
 
 		function getSnapshot(): T | null
@@ -60,6 +63,25 @@ export function createCache<T extends {id: number}>(table: string)
 		}
 		
 		return useSyncExternalStore(subscribe, getSnapshot)
+	}
+
+	async function fetchCachedValue(socket: ClientSocket, id: number | null)
+	{
+		if (!id) return null
+		if (cacheSubscriberCounts[id]) return cache[id]
+
+		const value = await new Promise<T | null>((resolve, reject) =>
+		{
+			socket.emit(FetchEvent<T>(table), {id}, (response) =>
+			{
+				if (response.error)
+					reject(response.error)
+				else
+					resolve(response.body?.value ?? null)
+			})
+		})
+		cacheResult({id, value})
+		return value
 	}
 
 	function useSetCachedValue()
@@ -77,7 +99,7 @@ export function createCache<T extends {id: number}>(table: string)
 		return setCachedValue
 	}
 
-	return useCachedValue
+	return [useCachedValue, fetchCachedValue] as const
 }
 
 export function useWebSocketTransition<TArgs, TResponse>(request: ClientWebSocketEvent<TArgs, TResponse>, onSuccess?: (args: TArgs, response: TResponse) => void)
