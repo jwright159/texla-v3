@@ -23,8 +23,8 @@ export default function registerCommands(io: Server, socket: ServerSocket)
 		},
 	}
 
-	let attemptedAuth = false;
-	let authenticated = false;
+	let attemptedAuth = false
+	let authenticated = false
 	socket.use(([event], next) => void (async () =>
 	{
 		if (!attemptedAuth)
@@ -43,11 +43,11 @@ export default function registerCommands(io: Server, socket: ServerSocket)
 				{
 					{
 						loggedInCharacterIds.push(character.id)
-						{(<Updater><any>socket).emitRoomUpdate(character.roomId)}
+						{(<Updater><unknown>socket).emitRoomUpdate(character.roomId)}
 					}
 					socket.onPermanent(DisconnectEvent, () =>
 					{
-						{(<Updater><any>socket).emitRoomUpdate(character.roomId)}
+						{(<Updater><unknown>socket).emitRoomUpdate(character.roomId)}
 						loggedInCharacterIds.splice(loggedInCharacterIds.indexOf(character.id), 1)
 					})
 				}
@@ -78,7 +78,7 @@ export default function registerCommands(io: Server, socket: ServerSocket)
 			socket.emit(UnknownCommandEvent, {command: commandName})
 	})
 
-	let joined = false;
+	let joined = false
 	async function join()
 	{
 		if (joined) return

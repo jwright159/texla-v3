@@ -113,7 +113,7 @@ export interface Response<TResponse> {
 
 export class ClientSocket
 {
-	socket: BaseClientSocket;
+	socket: BaseClientSocket
 
 	constructor(socket: BaseClientSocket)
 	{
@@ -183,7 +183,7 @@ export function useEvent<TArgs>(
 
 export class ServerSocket
 {
-	socket: BaseServerSocket;
+	socket: BaseServerSocket
 
 	constructor(socket: BaseServerSocket)
 	{
@@ -286,13 +286,15 @@ export class ServerSocket
 	}
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type BaseRoom = BroadcastOperator<DefaultEventsMap, any>
 export class ServerRoomSocket
 {
-	socket: BroadcastOperator<DefaultEventsMap, any>;
+	socket: BaseRoom
 
-	constructor(socket: BroadcastOperator<DefaultEventsMap, any>)
+	constructor(socket: BaseRoom)
 	{
-		this.socket = socket;
+		this.socket = socket
 	}
 
 	emit(
@@ -319,7 +321,7 @@ export class ServerRoomSocket
 
 export class Server
 {
-	socket: BaseServer;
+	socket: BaseServer
 
 	constructor(socket: BaseServer)
 	{

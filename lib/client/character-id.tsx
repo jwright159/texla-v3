@@ -6,7 +6,7 @@ import { DeleteCharacterEvent, RegisterCharacterEvent } from "../websocket-event
 import { useWebSocketTransition } from "./context"
 
 const CharacterIdContext = createContext<number>(0)
-const SetCharacterIdContext = createContext((id: number) => {})
+const SetCharacterIdContext = createContext<(id: number) => void>(() => {})
 export const useCharacterId = () => useContext(CharacterIdContext)
 
 function useFinishSelectCharacter()
@@ -18,7 +18,7 @@ function useFinishSelectCharacter()
 	const [isRedirecting, setIsRedirecting] = useState(false)
 	const setCharacterId = useContext(SetCharacterIdContext)
 
-	async function select(args: {}, id: number)
+	async function select(args: object, id: number)
 	{
 		const response = await fetch("/api/select-character", {
 			method: "POST",
@@ -43,7 +43,7 @@ function useFinishSelectCharacter()
 		}
 	}
 
-	return [isPending || isRedirecting, errorText, (args: {}, id: number) => startTransition(() => select(args, id))] as const
+	return [isPending || isRedirecting, errorText, (args: object, id: number) => startTransition(() => select(args, id))] as const
 }
 
 export function useSelectCharacter()

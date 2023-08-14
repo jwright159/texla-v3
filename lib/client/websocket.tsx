@@ -48,7 +48,7 @@ export function WebSocketProvider({
 		<WebSocketContext.Provider value={socket}>
 			{children}
 		</WebSocketContext.Provider>
-	:
+		:
 		<MainPanel title="Please wait">
 			<p>Connecting to server...</p>
 		</MainPanel>

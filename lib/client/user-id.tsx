@@ -6,7 +6,7 @@ import { useWebSocketTransition } from "./context"
 import { RegisterUserEvent, VerifyUserEvent } from "../websocket-events"
 
 const UserIdContext = createContext<number>(0)
-const SetUserIdContext = createContext((id: number) => {})
+const SetUserIdContext = createContext<(id: number) => void>(() => {})
 export const useUserId = () => useContext(UserIdContext)
 
 function useFinishLogin()

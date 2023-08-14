@@ -3,19 +3,7 @@ import { registerUser, verifyUser } from "../user"
 import { deleteCharacter, registerCharacter } from "../character"
 import { getSocketUserId } from "./context"
 
-function stringAsError<TArgs, TResponse>(func: (args: TArgs) => TResponse | string)
-{
-	return (args: TArgs) =>
-	{
-		const res = func(args)
-		if (typeof res === "string")
-			return { error: res }
-		else
-			return { body: res }
-	}
-}
-
-function stringAsErrorAsync<TArgs, TResponse>(func: (args: TArgs) => Promise<TResponse | string>)
+function stringAsError<TArgs, TResponse>(func: (args: TArgs) => Promise<TResponse | string>)
 {
 	return async (args: TArgs) =>
 	{
@@ -29,8 +17,8 @@ function stringAsErrorAsync<TArgs, TResponse>(func: (args: TArgs) => Promise<TRe
 
 export function registerRequests(io: Server, socket: ServerSocket)
 {
-	socket.onPermanentAsync(VerifyUserEvent, stringAsErrorAsync(({username, password}) => verifyUser(username, password)))
-	socket.onPermanentAsync(RegisterUserEvent, stringAsErrorAsync(({username, password}) => registerUser(username, password)))
-	socket.onPermanentAsync(RegisterCharacterEvent, stringAsErrorAsync(async ({name}) => await registerCharacter(await getSocketUserId(socket), name)))
-	socket.onPermanentAsync(DeleteCharacterEvent, stringAsErrorAsync(async ({id}) => await deleteCharacter(await getSocketUserId(socket), id)))
+	socket.onPermanentAsync(VerifyUserEvent, stringAsError(({username, password}) => verifyUser(username, password)))
+	socket.onPermanentAsync(RegisterUserEvent, stringAsError(({username, password}) => registerUser(username, password)))
+	socket.onPermanentAsync(RegisterCharacterEvent, stringAsError(async ({name}) => await registerCharacter(await getSocketUserId(socket), name)))
+	socket.onPermanentAsync(DeleteCharacterEvent, stringAsError(async ({id}) => await deleteCharacter(await getSocketUserId(socket), id)))
 }

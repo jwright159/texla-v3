@@ -22,5 +22,6 @@ else
 export default prisma
 
 declare global {
+	// eslint-disable-next-line no-var
 	var prisma: PrismaClient
 }

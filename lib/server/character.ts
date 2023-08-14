@@ -45,7 +45,7 @@ export async function deleteCharacter(userId: number, id: number)
 	return delCharacter.id
 }
 
-export async function parseCharacterId(userId: number, cookieData: any): Promise<number>
+export async function parseCharacterId(userId: number, cookieData: {characterId?: number}): Promise<number>
 {
 	if (!userId || !cookieData) return 0
 

@@ -89,7 +89,7 @@ function CharacterList()
 		<ul>
 			{room.characterIds.map(characterId => <CharacterItem key={characterId} id={characterId}/>)}
 		</ul>
-	:
+		:
 		"Nobody came."
 	)
 }

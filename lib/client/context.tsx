@@ -84,6 +84,7 @@ export function createCache<T extends {id: number}>(table: string)
 		return value
 	}
 
+	/*
 	function useSetCachedValue()
 	{
 		const socket = useWebSocket()
@@ -92,12 +93,13 @@ export function createCache<T extends {id: number}>(table: string)
 		{
 			return new Promise<void>(resolve => 
 				{
-					//emitEvent(socket, UpdateEvent(table), {value}, () => resolve())
+					emitEvent(socket, UpdateEvent(table), {value}, () => resolve())
 				})
 		}
 
 		return setCachedValue
 	}
+	*/
 
 	return [useCachedValue, fetchCachedValue] as const
 }

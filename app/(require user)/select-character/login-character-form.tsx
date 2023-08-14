@@ -10,19 +10,19 @@ export default function LoginCharacterForm()
 	const user = usePlayerUser()!
 
 	return (user.characterIds.length ?
-			<form onSubmit={event => {
-				event.preventDefault()
-				const characterId = parseInt(event.currentTarget.characterId.value)
-				selectCharacter(characterId)
-			}}>
-				{user.characterIds.map(id => <CharacterEntry key={id} id={id} disabled={isPending}/>)}
+		<form onSubmit={event => {
+			event.preventDefault()
+			const characterId = parseInt(event.currentTarget.characterId.value)
+			selectCharacter(characterId)
+		}}>
+			{user.characterIds.map(id => <CharacterEntry key={id} id={id} disabled={isPending}/>)}
 
-				<input type="submit" value="Select" disabled={isPending}/>
+			<input type="submit" value="Select" disabled={isPending}/>
 
-				<p style={{ color: "red" }}>{errorText}</p>
-			</form>
+			<p style={{ color: "red" }}>{errorText}</p>
+		</form>
 		:
-			<p>You have no characters!</p>
+		<p>You have no characters!</p>
 	)
 }
 

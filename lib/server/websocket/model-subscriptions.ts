@@ -5,11 +5,11 @@ export type PrismaTable<Original, Include, IncludeResult> = {
 	findUnique: (args: {where: {id: number}, include: Include | null}) => Promise<IncludeResult | null>,
 	update: (args: {where: {id: number}, include: Include | null, data: Original}) => Promise<IncludeResult>,
 }
-export type PrismaClientWithTable<TableName extends string, Original, Include = {}, IncludeResult extends Original = Original> = PrismaClient & {[x in TableName]: PrismaTable<Original, Include, IncludeResult>}
+export type PrismaClientWithTable<TableName extends string, Original, Include extends object = object, IncludeResult extends Original = Original> = PrismaClient & {[x in TableName]: PrismaTable<Original, Include, IncludeResult>}
 
 export const createSubscriptionFromModelIncludingIds = <
 	TOriginal extends {id: number},
-	TOutput,
+	TOutput extends object,
 > () => <
 	TTableName extends string,
 	const TMap extends {[x: string]: string},
@@ -17,13 +17,13 @@ export const createSubscriptionFromModelIncludingIds = <
 	TIncludeResult extends TOriginal & {[x in keyof TMap]: {id: number}[]},
 	TFinal extends TOriginal & {[x in TMap[keyof TMap]]: number[]},
 >(
-	io: Server,
-	socket: ServerSocket,
-	prisma: PrismaClientWithTable<TTableName, TOriginal, TInclude, TIncludeResult>,
-	table: TTableName,
-	map: TMap,
-	selectOutput: (value: TFinal) => TOutput,
-) =>
+			io: Server,
+			socket: ServerSocket,
+			prisma: PrismaClientWithTable<TTableName, TOriginal, TInclude, TIncludeResult>,
+			table: TTableName,
+			map: TMap,
+			selectOutput: (value: TFinal) => TOutput,
+		) =>
 {
 	return createSubscriptionFromModelIncluding<TOriginal, TOutput>()<TTableName, TInclude, TIncludeResult, TFinal>(
 		io,
@@ -32,8 +32,8 @@ export const createSubscriptionFromModelIncludingIds = <
 		table,
 		Object.assign({}, ...Object.keys(map).map(key => ({[key]: true}))),
 		(result) => Object.fromEntries([
-				...Object.entries(result).filter(([key, value]) => !Object.keys(map).includes(key)),
-				...Object.entries(map).map(([key, value]) => [value, result[key].map(v => v.id)]),
+			...Object.entries(result).filter(([key]) => !Object.keys(map).includes(key)),
+			...Object.entries(map).map(([key, value]) => [value, result[key].map(v => v.id)]),
 		]),
 		selectOutput,
 	)
@@ -41,21 +41,21 @@ export const createSubscriptionFromModelIncludingIds = <
 
 export const createSubscriptionFromModelIncluding = <
 	TOriginal extends {id: number},
-	TOutput,
+	TOutput extends object,
 >() => <
 	TTableName extends string,
-	TInclude extends {},
+	TInclude extends object,
 	TIncludeResult extends TOriginal,
 	TFinal extends TOriginal,
 >(
-	io: Server,
-	socket: ServerSocket,
-	prisma: PrismaClientWithTable<TTableName, TOriginal, TInclude, TIncludeResult>,
-	table: TTableName,
-	include: TInclude,
-	includeMap: (value: TIncludeResult) => TFinal,
-	selectOutput: (value: TFinal) => TOutput,
-) =>
+			io: Server,
+			socket: ServerSocket,
+			prisma: PrismaClientWithTable<TTableName, TOriginal, TInclude, TIncludeResult>,
+			table: TTableName,
+			include: TInclude,
+			includeMap: (value: TIncludeResult) => TFinal,
+			selectOutput: (value: TFinal) => TOutput,
+		) =>
 {
 	async function findUniqueMapped(id: number)
 	{
@@ -72,16 +72,16 @@ export const createSubscriptionFromModelIncluding = <
 
 export const createSubscriptionFromModel = <
 	TOriginal extends {id: number},
-	TOutput,
+	TOutput extends object,
 >() => <
 	TTableName extends string,
 >(
-	io: Server,
-	socket: ServerSocket,
-	prisma: PrismaClientWithTable<TTableName, TOriginal>,
-	table: TTableName,
-	selectOutput: (value: TOriginal) => TOutput,
-) =>
+			io: Server,
+			socket: ServerSocket,
+			prisma: PrismaClientWithTable<TTableName, TOriginal>,
+			table: TTableName,
+			selectOutput: (value: TOriginal) => TOutput,
+		) =>
 {
 	return createSubscription<TOriginal, TOutput>(
 		io,
@@ -95,13 +95,13 @@ export const createSubscriptionFromModel = <
 
 export function createSubscription<
 	TOriginal extends {id: number},
-	TOutput,
+	TOutput extends object,
 >(
 	io: Server,
 	socket: ServerSocket,
 	table: string,
 	findUnique: (id: number) => Promise<TOriginal | null>,
-	update: (id: number, data: any) => Promise<TOriginal | null>,
+	update: (id: number, data: TOriginal) => Promise<TOriginal | null>,
 	selectOutput: (value: TOriginal) => TOutput,
 )
 {
@@ -147,9 +147,4 @@ export function createSubscription<
 	})*/
 
 	return [sendUpdate] as const
-}
-
-function cleanPassword(data: any)
-{
-	if (data && 'password' in data) delete data.password
 }

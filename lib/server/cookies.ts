@@ -28,7 +28,7 @@ export async function unsealCookie(cookie: string): Promise<CookieData>
 	if (!cookiePassword) throw new Error("Session password not set")
 	if (!cookie) return {}
 
-	const cookieData = await unsealData<{}>(cookie, {password: cookiePassword})
+	const cookieData = await unsealData<object>(cookie, {password: cookiePassword})
 	if (!cookieData || typeof cookieData !== "object") return {}
 
 	return cookieData

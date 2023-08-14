@@ -3,8 +3,8 @@ import { getSocketUser } from "./context"
 
 export default function registerUserAuth(io: Server, socket: ServerSocket)
 {
-	let attemptedAuth = false;
-	let authenticated = false;
+	let attemptedAuth = false
+	let authenticated = false
 	socket.use(async ([event], next) =>
 	{
 		if (!attemptedAuth)

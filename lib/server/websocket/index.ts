@@ -48,9 +48,9 @@ function setupWebSocket(io: Server, socket: ServerSocket)
 		characterIds: room.characterIds.filter(characterId => loggedInCharacterIds.includes(characterId)),
 	}))
 
-	{(<Updater><any>socket).emitUserUpdate = emitUserUpdate}
-	{(<Updater><any>socket).emitCharacterUpdate = emitCharacterUpdate}
-	{(<Updater><any>socket).emitRoomUpdate = emitRoomUpdate}
+	{(<Updater><unknown>socket).emitUserUpdate = emitUserUpdate}
+	{(<Updater><unknown>socket).emitCharacterUpdate = emitCharacterUpdate}
+	{(<Updater><unknown>socket).emitRoomUpdate = emitRoomUpdate}
 
 	registerRequests(io, socket)
 	registerUserAuth(io, socket)

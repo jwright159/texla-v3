@@ -34,7 +34,7 @@ export async function registerUser(username: string, password: string)
 	return user.id
 }
 
-export async function parseUserId(cookieData: any)
+export async function parseUserId(cookieData: {userId?: number, password?: string})
 {
 	if (!cookieData) return 0
 
