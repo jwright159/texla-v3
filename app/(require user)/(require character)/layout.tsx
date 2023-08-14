@@ -33,7 +33,7 @@ export function LoginCharacterRedirector({
 	{
 		if (user && character === undefined)
 			router.push("/select-character")
-	}, [user, character])
+	}, [user, character, router])
 
 	return character ? children :
 		<MainPanel title="Loading">

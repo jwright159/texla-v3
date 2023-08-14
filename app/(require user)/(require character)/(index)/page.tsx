@@ -6,7 +6,7 @@ import { fetchCharacter, useCharacter, usePlayerCharacter } from "@/lib/client/c
 import { usePlayerRoom } from "@/lib/client/room"
 import { ReactElement, ReactNode, useCallback, useEffect, useRef, useState } from "react"
 import styles from "./page.module.css"
-import { fetchUser, usePlayerUser } from "@/lib/client/user"
+import { usePlayerUser } from "@/lib/client/user"
 import { useWebSocket } from "@/lib/client/websocket"
 import { ClientSocket, CommandEvent, EchoEvent, HelpEvent, JoinClientEvent, JoinServerEvent, LeaveClientEvent, LeaveServerEvent, SayEvent, UnknownCommandEvent, useEvent } from "@/lib/websocket-events"
 
@@ -19,7 +19,7 @@ export default function Index()
 	const [nodes, addNode] = useNodeList()
 
 	const socket = useWebSocket()
-	registerSocketCommands(socket, addNode)
+	useSocketCommands(socket, addNode)
 
 	const scrollTo = useRef<HTMLDivElement>(null)
 	useEffect(() => scrollTo.current!.scrollIntoView(), [nodes])
@@ -120,7 +120,7 @@ function useNodeList()
 	return [nodes, addNode] as const
 }
 
-function registerSocketCommands(socket: ClientSocket, addNode: (node: ReactNode) => void)
+function useSocketCommands(socket: ClientSocket, addNode: (node: ReactNode) => void)
 {
 	useEvent(socket, UnknownCommandEvent, ({command}) => addNode(`Unknown command: ${command}`))
 
@@ -130,9 +130,9 @@ function registerSocketCommands(socket: ClientSocket, addNode: (node: ReactNode)
 
 	useEvent(socket, HelpEvent, ({commands}) => addNode(<span className={styles.help}>{commands.join(" ")}</span>))
 
-	useEvent(socket, JoinServerEvent, ({id}) => fetchCharacter(socket, id).then(character => addNode(`${character?.name} joined`)))
+	useEvent(socket, JoinServerEvent, ({id}) => {fetchCharacter(socket, id).then(character => addNode(`${character?.name} joined`))})
 
-	useEvent(socket, LeaveServerEvent, ({id}) => fetchCharacter(socket, id).then(character => addNode(`${character?.name} left`)))
+	useEvent(socket, LeaveServerEvent, ({id}) => {fetchCharacter(socket, id).then(character => addNode(`${character?.name} left`))})
 
 	useEffect(() =>
 	{

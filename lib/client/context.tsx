@@ -27,7 +27,7 @@ export function createCache<T extends {id: number}>(table: string)
 	{
 		const socket = useWebSocket()
 
-		function incrementSubscribers(id: number, callback: () => void)
+		function incrementSubscribers(socket: ClientSocket, id: number, callback: () => void)
 		{
 			cacheSubscriberCounts[id] = (cacheSubscriberCounts[id] ?? 0) + 1
 			if (cacheSubscriberCounts[id] === 1)
@@ -38,7 +38,7 @@ export function createCache<T extends {id: number}>(table: string)
 			}
 		}
 
-		function decrementSubscribers(id: number)
+		function decrementSubscribers(socket: ClientSocket, id: number)
 		{
 			cacheSubscriberCounts[id] = (cacheSubscriberCounts[id] ?? 0) - 1
 			if (cacheSubscriberCounts[id] === 0)
@@ -53,8 +53,8 @@ export function createCache<T extends {id: number}>(table: string)
 		{
 			if (!id) return () => {}
 
-			incrementSubscribers(id, callback)
-			return () => decrementSubscribers(id)
+			incrementSubscribers(socket, id, callback)
+			return () => decrementSubscribers(socket, id)
 		}, [socket, id])
 
 		function getSnapshot(): T | null
