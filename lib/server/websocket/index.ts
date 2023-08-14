@@ -6,6 +6,7 @@ import registerCommands from "./commands"
 import { Character, Room, User } from "@prisma/client"
 import { Character as ClientCharacter, Room as ClientRoom, User as ClientUser } from "../../context"
 import { DisconnectEvent, Server, ServerSocket } from "../../websocket-events"
+import { loggedInCharacterIds } from "../character"
 
 export default function setupWebSocketServer(io: Server)
 {
@@ -19,26 +20,37 @@ export default function setupWebSocketServer(io: Server)
 
 }
 
+export interface Updater
+{
+	emitUserUpdate: (id: number) => void;
+	emitCharacterUpdate: (id: number) => void;
+	emitRoomUpdate: (id: number) => void;
+}
+
 function setupWebSocket(io: Server, socket: ServerSocket)
 {
-	createSubscriptionFromModelIncludingIds<User, ClientUser>()(io, socket, prisma, "user", {characters: "characterIds", rooms: "roomIds"}, user => ({
+	const [emitUserUpdate] = createSubscriptionFromModelIncludingIds<User, ClientUser>()(io, socket, prisma, "user", {characters: "characterIds", rooms: "roomIds"}, user => ({
 		id: user.id,
 		username: user.username,
 		characterIds: user.characterIds,
 		roomIds: user.roomIds,
 	}))
-	createSubscriptionFromModel<Character, ClientCharacter>()(io, socket, prisma, "character", character => ({
+	const [emitCharacterUpdate] = createSubscriptionFromModel<Character, ClientCharacter>()(io, socket, prisma, "character", character => ({
 		id: character.id,
 		name: character.name,
 		roomId: character.roomId,
 		userId: character.userId,
 	}))
-	createSubscriptionFromModelIncludingIds<Room, ClientRoom>()(io, socket, prisma, "room", {characters: "characterIds"}, room => ({
+	const [emitRoomUpdate] = createSubscriptionFromModelIncludingIds<Room, ClientRoom>()(io, socket, prisma, "room", {characters: "characterIds"}, room => ({
 		id: room.id,
 		userId: room.id,
 		name: room.name,
-		characterIds: room.characterIds,
+		characterIds: room.characterIds.filter(characterId => loggedInCharacterIds.includes(characterId)),
 	}))
+
+	{(<Updater><any>socket).emitUserUpdate = emitUserUpdate}
+	{(<Updater><any>socket).emitCharacterUpdate = emitCharacterUpdate}
+	{(<Updater><any>socket).emitRoomUpdate = emitRoomUpdate}
 
 	registerRequests(io, socket)
 	registerUserAuth(io, socket)

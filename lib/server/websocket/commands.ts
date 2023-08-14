@@ -1,6 +1,7 @@
 import { getSocketCharacter } from "./context"
 import { loggedInCharacterIds } from "../character"
 import { CommandEvent, DisconnectEvent, EchoEvent, HelpEvent, JoinClientEvent, JoinServerEvent, LeaveClientEvent, LeaveServerEvent, RoomRoom, SayEvent, Server, ServerSocket, UnknownCommandEvent } from "../../websocket-events"
+import { Updater } from "."
 
 export default function registerCommands(io: Server, socket: ServerSocket)
 {
@@ -40,9 +41,13 @@ export default function registerCommands(io: Server, socket: ServerSocket)
 				}
 				else
 				{
-					loggedInCharacterIds.push(character.id)
+					{
+						loggedInCharacterIds.push(character.id)
+						{(<Updater><any>socket).emitRoomUpdate(character.roomId)}
+					}
 					socket.onPermanent(DisconnectEvent, () =>
 					{
+						{(<Updater><any>socket).emitRoomUpdate(character.roomId)}
 						loggedInCharacterIds.splice(loggedInCharacterIds.indexOf(character.id), 1)
 					})
 				}

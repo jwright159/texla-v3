@@ -67,7 +67,7 @@ export const createSubscriptionFromModelIncluding = <
 		const value = id ? await prisma[table].update({where: {id}, include, data}) : null
 		return value ? includeMap(value) : null
 	}
-	createSubscription<TFinal, TOutput>(io, socket, table, findUniqueMapped, updateMapped, selectOutput)
+	return createSubscription<TFinal, TOutput>(io, socket, table, findUniqueMapped, updateMapped, selectOutput)
 }
 
 export const createSubscriptionFromModel = <
@@ -83,7 +83,7 @@ export const createSubscriptionFromModel = <
 	selectOutput: (value: TOriginal) => TOutput,
 ) =>
 {
-	createSubscription<TOriginal, TOutput>(
+	return createSubscription<TOriginal, TOutput>(
 		io,
 		socket,
 		table,
@@ -107,14 +107,22 @@ export function createSubscription<
 {
 	const listeners: Record<number, number> = {}
 
+	async function getUpdateValue(id: number)
+	{
+		const value = await findUnique(id)
+		return value !== null && selectOutput ? selectOutput(value) : null
+	}
+
+	async function sendUpdate(id: number)
+	{
+		io.in(UpdateRoom(table, id)).emit(UpdateEvent<TOutput>(table, id), {id, value: await getUpdateValue(id)})
+	}
+
 	socket.onPermanentAsync(SubscribeEvent(table), async ({id}) =>
 	{
 		listeners[id] = (listeners[id] ?? 0) + 1
 		if (listeners[id] === 1) socket.join(UpdateRoom(table, id))
-
-		const value = await findUnique(id)
-		const selectedValue = value !== null && selectOutput ? selectOutput(value) : null
-		socket.emit(UpdateEvent<TOutput>(table, id), {id, value: selectedValue})
+		socket.emit(UpdateEvent<TOutput>(table, id), {id, value: await getUpdateValue(id)})
 	})
 
 	socket.onPermanent(UnsubscribeEvent(table), ({id}) =>
@@ -125,9 +133,7 @@ export function createSubscription<
 
 	socket.onPermanentAsync(FetchEvent<TOutput>(table), async ({id}) =>
 	{
-		const value = await findUnique(id)
-		const selectedValue = value !== null && selectOutput ? selectOutput(value) : null
-		return {body: {value: selectedValue}}
+		return {body: {value: await getUpdateValue(id)}}
 	})
 
 	/*onPermanentAsync(`update-${table}`, async (value: T, callback: () => void) =>
@@ -139,6 +145,8 @@ export function createSubscription<
 		emitEvent(inRoom(io, UpdateRoom(table, value.id)), UpdateEvent<TOutput(table, id)>, {id, value}))
 		callback()
 	})*/
+
+	return [sendUpdate] as const
 }
 
 function cleanPassword(data: any)
