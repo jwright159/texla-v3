@@ -1,8 +1,7 @@
-import { DeleteCharacterRequest, RegisterCharacterRequest, RegisterUserRequest, VerifyUserRequest, on, onAsync } from "../../websocket-requests"
-import { Server, Socket } from "socket.io"
-import { parseUserId, registerUser, verifyUser } from "../user"
+import { DeleteCharacterEvent, RegisterCharacterEvent, RegisterUserEvent, Server, ServerSocket, VerifyUserEvent } from "../../websocket-events"
+import { registerUser, verifyUser } from "../user"
 import { deleteCharacter, registerCharacter } from "../character"
-import { unsealSocketCookie } from "../cookies"
+import { getSocketUserId } from "./context"
 
 function stringAsError<TArgs, TResponse>(func: (args: TArgs) => TResponse | string)
 {
@@ -28,10 +27,10 @@ function stringAsErrorAsync<TArgs, TResponse>(func: (args: TArgs) => Promise<TRe
 	}
 }
 
-export function registerRequests(io: Server, socket: Socket)
+export function registerRequests(io: Server, socket: ServerSocket)
 {
-	onAsync(socket, VerifyUserRequest, stringAsErrorAsync(({username, password}) => verifyUser(username, password)))
-	onAsync(socket, RegisterUserRequest, stringAsErrorAsync(({username, password}) => registerUser(username, password)))
-	onAsync(socket, RegisterCharacterRequest, stringAsErrorAsync(async ({name}) => await registerCharacter(await parseUserId(await unsealSocketCookie(socket)), name)))
-	onAsync(socket, DeleteCharacterRequest, stringAsErrorAsync(async ({id}) => await deleteCharacter(await parseUserId(await unsealSocketCookie(socket)), id)))
+	socket.onPermanentAsync(VerifyUserEvent, stringAsErrorAsync(({username, password}) => verifyUser(username, password)))
+	socket.onPermanentAsync(RegisterUserEvent, stringAsErrorAsync(({username, password}) => registerUser(username, password)))
+	socket.onPermanentAsync(RegisterCharacterEvent, stringAsErrorAsync(async ({name}) => await registerCharacter(await getSocketUserId(socket), name)))
+	socket.onPermanentAsync(DeleteCharacterEvent, stringAsErrorAsync(async ({id}) => await deleteCharacter(await getSocketUserId(socket), id)))
 }

@@ -1,3 +1,5 @@
+export const loggedInCharacterIds: number[] = []
+
 export async function verifyCharacter(userId: number, id: number)
 {
 	if (!userId) return "Not logged in"
@@ -5,6 +7,8 @@ export async function verifyCharacter(userId: number, id: number)
 	if (isNaN(id)) return "Must select a character"
 
 	if (id === 0) return 0
+
+	if (id in loggedInCharacterIds) return "Character already logged in"
 
 	const character = await prisma.character.findUnique({ where: { id } })
 	if (!character) return "No character with that ID"
@@ -41,7 +45,7 @@ export async function deleteCharacter(userId: number, id: number)
 	return delCharacter.id
 }
 
-export async function getCharacterId(userId: number, cookieData: any): Promise<number>
+export async function parseCharacterId(userId: number, cookieData: any): Promise<number>
 {
 	if (!userId || !cookieData) return 0
 

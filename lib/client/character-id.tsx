@@ -2,14 +2,14 @@
 
 import { ReactNode, createContext, useContext, useState, useTransition } from "react"
 import { useRedirectToReferrer } from "./referrer"
-import { DeleteCharacterRequest, RegisterCharacterRequest } from "../websocket-requests"
+import { DeleteCharacterEvent, RegisterCharacterEvent } from "../websocket-events"
 import { useWebSocketTransition } from "./context"
 
 const CharacterIdContext = createContext<number>(0)
 const SetCharacterIdContext = createContext((id: number) => {})
 export const useCharacterId = () => useContext(CharacterIdContext)
 
-function useFinishSelectCharacter(): [boolean, string, (args: {}, id: number) => void]
+function useFinishSelectCharacter()
 {
 	const redirect = useRedirectToReferrer()
 
@@ -43,7 +43,7 @@ function useFinishSelectCharacter(): [boolean, string, (args: {}, id: number) =>
 		}
 	}
 
-	return [isPending || isRedirecting, errorText, (args, id) => startTransition(() => select(args, id))]
+	return [isPending || isRedirecting, errorText, (args: {}, id: number) => startTransition(() => select(args, id))] as const
 }
 
 export function useSelectCharacter()
@@ -55,7 +55,7 @@ export function useSelectCharacter()
 export function useRegisterCharacter()
 {
 	const [isSelectPending, selectErrorText, selectCharacter] = useFinishSelectCharacter()
-	const [isRegPending, regErrorText, register] = useWebSocketTransition(RegisterCharacterRequest, selectCharacter)
+	const [isRegPending, regErrorText, register] = useWebSocketTransition(RegisterCharacterEvent, selectCharacter)
 
 	return {
 		isPending: isRegPending || isSelectPending,
@@ -73,7 +73,7 @@ export function useLogoutCharacter()
 export function useDeleteCharacter()
 {
 	const [isSelectPending, selectErrorText, selectCharacter] = useFinishSelectCharacter()
-	const [isDelPending, delErrorText, del] = useWebSocketTransition(DeleteCharacterRequest, () => selectCharacter({}, 0))
+	const [isDelPending, delErrorText, del] = useWebSocketTransition(DeleteCharacterEvent, () => selectCharacter({}, 0))
 
 	return {
 		isPending: isDelPending || isSelectPending,

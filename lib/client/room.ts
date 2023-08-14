@@ -1,14 +1,10 @@
 "use client"
 
+import { Room } from "../context"
 import { usePlayerCharacter } from "./character"
 import { createCache } from "./context"
-import { Room as RoomModel } from "@prisma/client"
 
-export interface Room extends RoomModel {
-	characterIds: number[],
-}
-
-export const [useRoom, useSetRoom] = createCache<Room>("room")
+export const useRoom = createCache<Room>("room")
 
 export const usePlayerRoom = () =>
 {

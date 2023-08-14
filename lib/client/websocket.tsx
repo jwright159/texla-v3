@@ -1,11 +1,13 @@
 "use client"
 
 import { useState, useEffect, ReactNode, createContext, useContext } from "react"
-import { io, Socket } from "socket.io-client"
+import { io } from "socket.io-client"
 import { useUserId } from "./user-id"
 import { MainPanel } from "@/components/panel"
+import { useCharacterId } from "./character-id"
+import { ClientSocket, ConnectEvent, DisconnectEvent } from "../websocket-events"
 
-const WebSocketContext = createContext<Socket | null>(null)
+const WebSocketContext = createContext<ClientSocket | null>(null)
 
 export const useWebSocket = () => useContext(WebSocketContext)!
 
@@ -15,21 +17,22 @@ export function WebSocketProvider({
 	children: ReactNode,
 })
 {
-	const [socket, setSocket] = useState<Socket | null>(null)
+	const [socket, setSocket] = useState<ClientSocket | null>(null)
 	const [connected, setConnected] = useState(false)
 	const userId = useUserId()
+	const characterId = useCharacterId()
 
 	useEffect(() =>
 	{
-		const socket = io()
+		const socket = new ClientSocket(io())
 		setSocket(socket)
 
-		socket.on("connect", () =>
+		socket.on(ConnectEvent, () =>
 		{
 			console.log(`Connected ${socket.id}`)
 			setConnected(true)
 		})
-		socket.on("disconnect", reason =>
+		socket.on(DisconnectEvent, reason =>
 		{
 			console.log(`Disconnected, ${reason}`)
 			setConnected(false)
@@ -39,13 +42,13 @@ export function WebSocketProvider({
 		{
 			socket.disconnect()
 		}
-	}, [userId])
+	}, [userId, characterId])
 
 	return (socket && connected ?
 		<WebSocketContext.Provider value={socket}>
 			{children}
 		</WebSocketContext.Provider>
-		:
+	:
 		<MainPanel title="Please wait">
 			<p>Connecting to server...</p>
 		</MainPanel>

@@ -1,15 +1,10 @@
 "use client"
 
-import { User as UserModel } from "@prisma/client"
+import { User } from "../context"
 import { createCache } from "./context"
 import { useUserId } from "./user-id"
 
-export interface User extends UserModel {
-	characterIds: number[],
-	roomIds: number[],
-}
-
-export const [useUser, useSetUser] = createCache<User>("user")
+export const useUser = createCache<User>("user")
 
 export const usePlayerUser = () =>
 {

@@ -4,11 +4,11 @@ import LogoutButton from "../../../login/logout-button"
 import LogoutCharacterButton from "../../select-character/logout-character-button"
 import { useCharacter, usePlayerCharacter } from "@/lib/client/character"
 import { usePlayerRoom } from "@/lib/client/room"
-import { ReactElement, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { ReactElement, ReactNode, useCallback, useEffect, useRef, useState } from "react"
 import styles from "./page.module.css"
 import { usePlayerUser } from "@/lib/client/user"
 import { useWebSocket } from "@/lib/client/websocket"
-import { Socket } from "socket.io-client"
+import { ClientSocket, CommandEvent, EchoEvent, HelpEvent, JoinClientEvent, JoinServerEvent, LeaveClientEvent, LeaveServerEvent, SayEvent, UnknownCommandEvent, useEvent } from "@/lib/websocket-events"
 
 export default function Index()
 {
@@ -30,13 +30,13 @@ export default function Index()
 	{
 		if (!input) return
 		addNode(<span className={styles.command}>&gt;{input}</span>)
-		socket.emit("command", input)
+		socket.emit(CommandEvent, {command: input})
 		setInput("")
 	}
 
 	return (
 		<main className={styles.main}>
-			<h1 className={styles.header}>You are in <span style={{fontFamily: "monospace"}}>{room?.name ?? "null"}</span></h1>
+			<h1 className={styles.header}>You are in {room?.name ?? "null"}</h1>
 
 			<div className={styles.game}>
 				<div className={styles.messages}>
@@ -106,7 +106,7 @@ function CharacterItem({
 	)
 }
 
-function useNodeList(): [typeof nodes, typeof addNode]
+function useNodeList()
 {
 	const [nodes, setNodes] = useState<ReactElement[]>([])
 	const nodeCount = useRef(0)
@@ -117,34 +117,32 @@ function useNodeList(): [typeof nodes, typeof addNode]
 		nodeCount.current++
 	}, [])
 
-	return [nodes, addNode]
+	return [nodes, addNode] as const
 }
 
-function registerSocketCommands(socket: Socket, addNode: (node: ReactNode) => void)
+function registerSocketCommands(socket: ClientSocket, addNode: (node: ReactNode) => void)
 {
-	const commands: Record<string, (args: string) => void> = useMemo(() => ({
-		"unknown-command": (text: string) =>
-		{
-			addNode(text)
-		},
+	useEvent(socket, UnknownCommandEvent, ({command}) => addNode(`Unknown command: ${command}`))
 
-		echo: (text: string) =>
-		{
-			addNode(text)
-		},
-	}), [])
+	useEvent(socket, EchoEvent, ({text}) => addNode(text))
+
+	useEvent(socket, SayEvent, ({speakerId, text}) => addNode(`[${speakerId}] ${text}`))
+
+	useEvent(socket, HelpEvent, ({commands}) => addNode(<span className={styles.help}>{commands.join(" ")}</span>))
+
+	useEvent(socket, JoinServerEvent, ({id}) => addNode(`${id} joined`))
+
+	useEvent(socket, LeaveServerEvent, ({id}) => addNode(`${id} left`))
 
 	useEffect(() =>
 	{
 		{
-			console.log("Registering commands")
-			Object.entries(commands).forEach(([name, command]) => socket.on(name, command))
+			socket.emit(JoinClientEvent)
 		}
 
 		return () =>
 		{
-			console.log("Unregistering commands")
-			Object.entries(commands).forEach(([name, command]) => socket.off(name, command))
+			socket.emit(LeaveClientEvent)
 		}
-	}, [socket, commands])
+	}, [socket])
 }

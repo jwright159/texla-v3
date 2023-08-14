@@ -3,13 +3,13 @@
 import { ReactNode, createContext, useContext, useState, useTransition } from "react"
 import { useRedirectToReferrer } from "./referrer"
 import { useWebSocketTransition } from "./context"
-import { RegisterUserRequest, VerifyUserRequest } from "../websocket-requests"
+import { RegisterUserEvent, VerifyUserEvent } from "../websocket-events"
 
 const UserIdContext = createContext<number>(0)
 const SetUserIdContext = createContext((id: number) => {})
 export const useUserId = () => useContext(UserIdContext)
 
-function useFinishLogin(): [boolean, string, (args: {username: string, password: string}, id: number) => void]
+function useFinishLogin()
 {
 	const redirect = useRedirectToReferrer()
 
@@ -42,10 +42,10 @@ function useFinishLogin(): [boolean, string, (args: {username: string, password:
 		}
 	}
 
-	return [isPending, errorText, (args, id) => startTransition(() => finishLogin(args, id))]
+	return [isPending, errorText, (args: {username: string, password: string}, id: number) => startTransition(() => finishLogin(args, id))] as const
 }
 
-function useFinishLogout(): [boolean, string, () => void]
+function useFinishLogout()
 {
 	const redirect = useRedirectToReferrer()
 
@@ -73,13 +73,13 @@ function useFinishLogout(): [boolean, string, () => void]
 		}
 	}
 
-	return [isPending || isRedirecting, errorText, () => startTransition(() => finishLogout())]
+	return [isPending || isRedirecting, errorText, () => startTransition(() => finishLogout())] as const
 }
 
 export function useLoginUser()
 {
 	const [isLoginPending, loginErrorText, finishLogin] = useFinishLogin()
-	const [isVerifyPending, verifyErrorText, login] = useWebSocketTransition(VerifyUserRequest, finishLogin)
+	const [isVerifyPending, verifyErrorText, login] = useWebSocketTransition(VerifyUserEvent, finishLogin)
 
 	return {
 		isPending: isVerifyPending || isLoginPending,
@@ -91,7 +91,7 @@ export function useLoginUser()
 export function useRegisterUser()
 {
 	const [isLoginPending, loginErrorText, finishLogin] = useFinishLogin()
-	const [isRegPending, regErrorText, register] = useWebSocketTransition(RegisterUserRequest, finishLogin)
+	const [isRegPending, regErrorText, register] = useWebSocketTransition(RegisterUserEvent, finishLogin)
 
 	return {
 		isPending: isRegPending || isLoginPending,

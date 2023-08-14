@@ -1,28 +1,31 @@
+import { Server, ServerSocket, SubscribeEvent, UnsubscribeEvent, UpdateEvent, UpdateRoom } from "../../websocket-events"
 import { PrismaClient } from "@prisma/client"
-import { Server, Socket } from "socket.io"
 
 export type PrismaTable<Original, Include, IncludeResult> = {
 	findUnique: (args: {where: {id: number}, include: Include | null}) => Promise<IncludeResult | null>,
 	update: (args: {where: {id: number}, include: Include | null, data: Original}) => Promise<IncludeResult>,
 }
-export type PrismaClientWithTable<TableName extends string, Original, Include = {}, IncludeResult = Original> = PrismaClient & {[x in TableName]: PrismaTable<Original, Include, IncludeResult>}
+export type PrismaClientWithTable<TableName extends string, Original, Include = {}, IncludeResult extends Original = Original> = PrismaClient & {[x in TableName]: PrismaTable<Original, Include, IncludeResult>}
 
-export function createSubscriptionFromModelIncludingIds<
-	TMap extends {[x: string]: string},
+export const createSubscriptionFromModelIncludingIds = <
 	TOriginal extends {id: number},
+	TOutput,
+> () => <
+	TTableName extends string,
+	const TMap extends {[x: string]: string},
 	TInclude extends {[x in keyof TMap]: boolean},
 	TIncludeResult extends TOriginal & {[x in keyof TMap]: {id: number}[]},
 	TFinal extends TOriginal & {[x in TMap[keyof TMap]]: number[]},
-	TTableName extends string,
 >(
 	io: Server,
-	socket: Socket,
+	socket: ServerSocket,
 	prisma: PrismaClientWithTable<TTableName, TOriginal, TInclude, TIncludeResult>,
 	table: TTableName,
 	map: TMap,
-)
+	selectOutput: (value: TFinal) => TOutput,
+) =>
 {
-	return createSubscriptionFromModelIncluding<TOriginal, TInclude, TIncludeResult, TFinal, TTableName>(
+	return createSubscriptionFromModelIncluding<TOriginal, TOutput>()<TTableName, TInclude, TIncludeResult, TFinal>(
 		io,
 		socket,
 		prisma,
@@ -32,82 +35,103 @@ export function createSubscriptionFromModelIncludingIds<
 				...Object.entries(result).filter(([key, value]) => !Object.keys(map).includes(key)),
 				...Object.entries(map).map(([key, value]) => [value, result[key].map(v => v.id)]),
 		]),
+		selectOutput,
 	)
 }
 
-export function createSubscriptionFromModelIncluding<
+export const createSubscriptionFromModelIncluding = <
 	TOriginal extends {id: number},
+	TOutput,
+>() => <
+	TTableName extends string,
 	TInclude extends {},
 	TIncludeResult extends TOriginal,
 	TFinal extends TOriginal,
-	TTableName extends string,
 >(
 	io: Server,
-	socket: Socket,
+	socket: ServerSocket,
 	prisma: PrismaClientWithTable<TTableName, TOriginal, TInclude, TIncludeResult>,
 	table: TTableName,
 	include: TInclude,
 	includeMap: (value: TIncludeResult) => TFinal,
-)
+	selectOutput: (value: TFinal) => TOutput,
+) =>
 {
 	async function findUniqueMapped(id: number)
 	{
-		const value = await prisma[table].findUnique({where: {id}, include})
+		const value = id ? await prisma[table].findUnique({where: {id}, include}) : null
 		return value ? includeMap(value) : null
 	}
 	async function updateMapped(id: number, data: TOriginal)
 	{
-		const value = await prisma[table].update({where: {id}, include, data})
-		return includeMap(value)
+		const value = id ? await prisma[table].update({where: {id}, include, data}) : null
+		return value ? includeMap(value) : null
 	}
-	createSubscription<TFinal>(io, socket, table, findUniqueMapped, updateMapped)
+	createSubscription<TFinal, TOutput>(io, socket, table, findUniqueMapped, updateMapped, selectOutput)
 }
 
-export function createSubscriptionFromModel<T extends {id: number}, TTableName extends string>(
+export const createSubscriptionFromModel = <
+	TOriginal extends {id: number},
+	TOutput,
+>() => <
+	TTableName extends string,
+>(
 	io: Server,
-	socket: Socket,
-	prisma: PrismaClientWithTable<TTableName, T>,
+	socket: ServerSocket,
+	prisma: PrismaClientWithTable<TTableName, TOriginal>,
 	table: TTableName,
-)
+	selectOutput: (value: TOriginal) => TOutput,
+) =>
 {
-	createSubscription<T>(io, socket, table, (id) => prisma[table].findUnique({where: {id}, include: null}), (id, data) => prisma[table].update({where: {id}, include: null, data}))
+	createSubscription<TOriginal, TOutput>(
+		io,
+		socket,
+		table,
+		async (id) => id ? await prisma[table].findUnique({where: {id}, include: null}) : null,
+		async (id, data) => id ? await prisma[table].update({where: {id}, include: null, data}) : null,
+		selectOutput
+	)
 }
 
-export function createSubscription<T extends {id: number}>(
+export function createSubscription<
+	TOriginal extends {id: number},
+	TOutput,
+>(
 	io: Server,
-	socket: Socket,
+	socket: ServerSocket,
 	table: string,
-	findUnique: (id: number) => Promise<T | null>,
-	update: (id: number, data: any) => Promise<T>,
+	findUnique: (id: number) => Promise<TOriginal | null>,
+	update: (id: number, data: any) => Promise<TOriginal | null>,
+	selectOutput: (value: TOriginal) => TOutput,
 )
 {
 	const listeners: Record<number, number> = {}
 
-	socket.on(`subscribe-${table}`, async (id: number) =>
+	socket.onPermanentAsync(SubscribeEvent(table), async ({id}) =>
 	{
 		listeners[id] = (listeners[id] ?? 0) + 1
-		if (listeners[id] === 1) socket.join(`update-${table}-${id}`)
+		if (listeners[id] === 1) socket.join(UpdateRoom(table, id))
 
 		const value = await findUnique(id)
-		cleanPassword(value)
-		socket.emit(`update-${table}-${id}`, {id, value})
+		const selectedValue = value !== null && selectOutput ? selectOutput(value) : null
+		socket.emit(UpdateEvent<TOutput>(table, id), {id, value: selectedValue})
 	})
 
-	socket.on(`unsubscribe-${table}`, (id: number) =>
+	socket.onPermanent(UnsubscribeEvent(table), ({id}) =>
 	{
 		listeners[id] = (listeners[id] ?? 0) - 1
-		if (listeners[id] === 0) socket.leave(`update-${table}-${id}`)
+		if (listeners[id] === 0) socket.leave(UpdateRoom(table, id))
 	})
 
-	socket.on(`update-${table}`, async (value: T, callback: () => void) =>
+	/*onPermanentAsync(`update-${table}`, async (value: T, callback: () => void) =>
 	{
 		const id = value.id
 		cleanPassword(value)
 		value = await update(id, value)
 		cleanPassword(value)
-		io.in(`update-${table}-${value.id}`).emit(`update-${table}-${id}`, {id, value})
+		emitEvent(inRoom(io, UpdateRoom(table, value.id)), UpdateEvent<TOutput(table, id)>, {id, value}))
 		callback()
-	})
+	})*/
 }
 
 function cleanPassword(data: any)

@@ -1,23 +1,16 @@
-import { Server, Socket } from "socket.io"
-import { unsealSocketCookie } from "../cookies"
-import { parseUserId } from "../user"
+import { Server, ServerSocket } from "@/lib/websocket-events"
+import { getSocketUser } from "./context"
 
-export default function registerUserNamespace(io: Server)
-{
-	io.on("connect", socket => registerAuth(io, socket))
-}
-
-function registerAuth(io: Server, socket: Socket)
+export default function registerUserAuth(io: Server, socket: ServerSocket)
 {
 	let attemptedAuth = false;
 	let authenticated = false;
-	socket.use(([event], next) => void (async () =>
+	socket.use(async ([event], next) =>
 	{
 		if (!attemptedAuth)
 		{
-			const cookie = await unsealSocketCookie(socket)
-			const userId = await parseUserId(cookie)
-			authenticated = !!userId
+			attemptedAuth = true
+			authenticated = !!await getSocketUser(socket)
 		}
 		
 		if (authenticated || (
@@ -27,5 +20,5 @@ function registerAuth(io: Server, socket: Socket)
 			next()
 		else
 			next(new Error("Invalid auth"))
-	})())
+	})
 }

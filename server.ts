@@ -3,8 +3,9 @@ configDotenv({path: "./.env.local"})
 
 import { createServer } from "http"
 import next from "next"
-import { Server } from "socket.io"
+import { Server as BaseServer } from "socket.io"
 import setupWebSocketServer from "./lib/server/websocket"
+import { Server } from "./lib/websocket-events"
 
 // FIXME: In case hot module reloading breaks again, https://github.com/vercel/next.js/issues/50461
 
@@ -21,7 +22,7 @@ import setupWebSocketServer from "./lib/server/websocket"
 	httpServer.on("request", handleRequest)
 	httpServer.on("upgrade", handleUpgrade)
 
-	const io = new Server(httpServer)
+	const io = new Server(new BaseServer(httpServer))
 	setupWebSocketServer(io)
 
 	httpServer.listen(port, () => {

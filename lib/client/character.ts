@@ -4,7 +4,7 @@ import { useCharacterId } from "./character-id"
 import { createCache } from "./context"
 import { Character } from "@prisma/client"
 
-export const [useCharacter, useSetCharacter] = createCache<Character>("character")
+export const useCharacter = createCache<Character>("character")
 
 export const usePlayerCharacter = () =>
 {
