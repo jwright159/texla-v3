@@ -1,9 +1,7 @@
 "use client"
 
-import { MainPanel } from "@/components/panel"
-import { usePlayerUser } from "@/lib/client/user"
-import { useRouter } from "next/navigation"
-import { ReactNode, useEffect } from "react"
+import { ReactNode } from "react"
+import LoginRedirector from "./login-redirector"
 
 export default function GameLoginLayout({
 	children,
@@ -15,27 +13,5 @@ export default function GameLoginLayout({
 		<LoginRedirector>
 			{children}
 		</LoginRedirector>
-	)
-}
-
-export function LoginRedirector({
-	children
-}: {
-	children: ReactNode
-})
-{
-	const router = useRouter()
-	const user = usePlayerUser()
-
-	useEffect(() => 
-	{
-		if (user === undefined)
-			router.push("/login")
-	}, [router, user])
-
-	return user ? children : (
-		<MainPanel title="Loading">
-			<p>Loading user...</p>
-		</MainPanel>
 	)
 }
