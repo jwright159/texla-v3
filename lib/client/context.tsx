@@ -8,7 +8,7 @@ export function createCache<T extends {id: number}>(table: string)
 {
 	const cache: Record<number, T | null> = {}
 	const cacheSubscriberCounts: Record<number, number> = {}
-	const cacheCallbacks: Record<number, () => void> = {}
+	const cacheCallbacks: Record<number, (() => void)[]> = {}
 
 	function cacheResult({
 		id,
@@ -20,7 +20,7 @@ export function createCache<T extends {id: number}>(table: string)
 	{
 		if (cache[id] && JSON.stringify(value) === JSON.stringify(cache[id])) return
 		cache[id] = value
-		if (cacheCallbacks[id]) cacheCallbacks[id]()
+		if (cacheCallbacks[id]) cacheCallbacks[id].forEach(callback => callback())
 	}
 
 	function useCachedValue(id: number | null): T | null
@@ -34,12 +34,16 @@ export function createCache<T extends {id: number}>(table: string)
 			{
 				socket.on(UpdateEvent<T>(table, id), cacheResult)
 				socket.emit(SubscribeEvent(table), {id})
-				cacheCallbacks[id] = callback
+				cacheCallbacks[id] = []
 			}
+
+			cacheCallbacks[id].push(callback)
 		}
 
-		function decrementSubscribers(socket: ClientSocket, id: number)
+		function decrementSubscribers(socket: ClientSocket, id: number, callback: () => void)
 		{
+			cacheCallbacks[id].splice(cacheCallbacks[id].indexOf(callback), 1)
+
 			cacheSubscriberCounts[id] = (cacheSubscriberCounts[id] ?? 0) - 1
 			if (cacheSubscriberCounts[id] === 0)
 			{
@@ -54,7 +58,7 @@ export function createCache<T extends {id: number}>(table: string)
 			if (!id) return () => {}
 
 			incrementSubscribers(socket, id, callback)
-			return () => decrementSubscribers(socket, id)
+			return () => decrementSubscribers(socket, id, callback)
 		}, [socket, id])
 
 		function getSnapshot(): T | null

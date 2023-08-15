@@ -1,0 +1,11 @@
+.characters
+{
+	flex-grow: 1;
+	max-width: 13em;
+	padding: 8px;
+}
+
+.characters > ul
+{
+	padding-left: 30px;
+}

@@ -226,7 +226,7 @@ export class ServerSocket
 	{
 		this.socket.on(event.event, (args: TArgs, callback?: (res: Response<TResponse>) => void) =>
 		{
-			if (callback)
+			if (callback && typeof callback === "function")
 				callback(listener(args) ?? {})
 			else
 				listener(args)
@@ -248,7 +248,7 @@ export class ServerSocket
 	{
 		this.socket.on(event.event, async (args: TArgs, callback?: (res: Response<TResponse>) => void) =>
 		{
-			if (callback)
+			if (callback && typeof callback === "function")
 				callback((await listener(args)) ?? {})
 			else
 				await listener(args)
