@@ -2,30 +2,19 @@
 
 import { fetchCharacter } from "@/lib/client/character"
 import { useWebSocket } from "@/lib/client/websocket"
-import { ClientSocket, CommandEvent, EchoEvent, HelpEvent, JoinClientEvent, JoinServerEvent, LeaveClientEvent, LeaveServerEvent, SayEvent, UnknownCommandEvent, useEvent } from "@/lib/websocket-events"
-import { useRef, useEffect, useState, ReactElement, ReactNode, useCallback } from "react"
+import { CommandEvent, EchoEvent, HelpEvent, JoinClientEvent, JoinServerEvent, LeaveClientEvent, LeaveServerEvent, SayEvent, UnknownCommandEvent, useEvent } from "@/lib/websocket-events"
+import { useRef, useEffect, useState, ReactElement, ReactNode, useCallback, DependencyList } from "react"
 import styles from "./command-pane.module.css"
 import pageStyles from "./page.module.css"
+import InputBox from "./input-box"
 
 export default function CommandPane()
 {
 	const [nodes, addNode] = useNodeList()
+	
+	const scrollTo = useScrollToRef<HTMLDivElement>([nodes])
 
-	const socket = useWebSocket()
-	useSocketCommands(socket, addNode)
-
-	const scrollTo = useRef<HTMLDivElement>(null)
-	useEffect(() => scrollTo.current!.scrollIntoView(), [nodes])
-
-	const [input, setInput] = useState("")
-
-	function sendCommand()
-	{
-		if (!input) return
-		addNode(<span className={styles.command}>&gt;{input}</span>)
-		socket.emit(CommandEvent, {command: input})
-		setInput("")
-	}
+	const socket = useSocketWithCommands(addNode)
 
 	return (
 		<div className={styles.messages}>
@@ -36,26 +25,13 @@ export default function CommandPane()
 				<div ref={scrollTo}></div>
 			</div>
 
-			<div className={styles.inputWrapper}>
-				<input
-					value={input}
-					onChange={event => setInput(event.target.value)}
-					onKeyDown={event =>
-					{
-						if (event.key === "Enter")
-						{
-							event.preventDefault()
-							sendCommand()
-						}
-					}}
-					className={`${styles.input} ${pageStyles.bordered}`}
-					placeholder="Input command..."
-				></input>
-				<button
-					className={styles.submitButton}
-					onClick={sendCommand}
-				>→</button>
-			</div>
+			<InputBox
+				onSend={(command) =>
+				{
+					addNode(<span className={styles.command}>&gt;{command}</span>)
+					socket.emit(CommandEvent, {command})
+				}}
+			/>
 		</div>
 	)
 }
@@ -74,8 +50,10 @@ function useNodeList()
 	return [nodes, addNode] as const
 }
 
-function useSocketCommands(socket: ClientSocket, addNode: (node: ReactNode) => void)
+function useSocketWithCommands(addNode: (node: ReactNode) => void)
 {
+	const socket = useWebSocket()
+
 	useEvent(socket, UnknownCommandEvent, ({command}) => addNode(`Unknown command: ${command}`))
 
 	useEvent(socket, EchoEvent, ({text}) => addNode(text))
@@ -99,4 +77,13 @@ function useSocketCommands(socket: ClientSocket, addNode: (node: ReactNode) => v
 			socket.emit(LeaveClientEvent)
 		}
 	}, [socket])
+
+	return socket
+}
+
+function useScrollToRef<T extends HTMLElement>(deps: DependencyList)
+{
+	const scrollTo = useRef<T>(null)
+	useEffect(() => scrollTo.current!.scrollIntoView(), deps)
+	return scrollTo
 }

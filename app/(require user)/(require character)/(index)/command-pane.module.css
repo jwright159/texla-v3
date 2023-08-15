@@ -27,19 +27,6 @@
 	list-style-type: none;
 }
 
-.inputWrapper
-{
-	display: flex;
-	column-gap: 8px;
-}
-
-.input
-{
-	display: block;
-	padding: 4px 8px;
-	flex-grow: 1;
-}
-
 .command
 {
 	color: gray;
