@@ -12,27 +12,26 @@ model User {
 	username String @unique
 	password String
 
-	characters Character[]
-	rooms Room[]
+	objects Object[]
 }
 
-model Character {
+model Object {
 	id Int @id @default(autoincrement())
-	user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-	userId Int
+	owner User @relation(fields: [ownerId], references: [id])
+	ownerId Int
 
-	name String
+	contents Object[] @relation("contents")
+	location Object @relation("contents", fields: [locationId], references: [id])
+	locationId Int
 
-	room Room @relation(fields: [roomId], references: [id])
-	roomId Int @default(1)
+	props Prop[]
 }
 
-model Room {
+model Prop {
 	id Int @id @default(autoincrement())
-	user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-	userId Int
-
-	name String
-
-	characters Character[]
+	object Object @relation(fields: [objectId], references: [id], onDelete: Cascade)
+	objectId Int
+	location String
+	@@unique([objectId, location])
+	value String
 }
