@@ -31,7 +31,7 @@ model Prop {
 	id Int @id @default(autoincrement())
 	object Object @relation(fields: [objectId], references: [id], onDelete: Cascade)
 	objectId Int
-	location String
-	@@unique([objectId, location])
+	name String
+	@@unique([objectId, name])
 	value String
 }
