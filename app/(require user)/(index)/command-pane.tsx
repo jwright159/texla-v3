@@ -2,7 +2,7 @@
 
 import { fetchGameObject } from "@/lib/client/game-object"
 import { useWebSocket } from "@/lib/client/websocket"
-import { CommandEvent, EchoEvent, HelpEvent, JoinClientEvent, JoinServerEvent, LeaveClientEvent, LeaveServerEvent, SayEvent, UnknownCommandEvent, useEvent } from "@/lib/websocket-events"
+import { CommandEvent, CreateEvent, EchoEvent, ErrorEvent, HelpEvent, JoinEvent, LeaveEvent, SayEvent, useEvent } from "@/lib/websocket-events"
 import { useRef, useEffect, useState, ReactElement, ReactNode, useCallback, DependencyList } from "react"
 import styles from "./command-pane.module.css"
 import pageStyles from "./page.module.css"
@@ -43,8 +43,7 @@ function useNodeList()
 
 	const addNode = useCallback((item: ReactNode) =>
 	{
-		setNodes(nodes => [...nodes, <div key={nodeCount.current}>{item}</div>])
-		nodeCount.current++
+		setNodes(nodes => [...nodes, <div key={nodeCount.current++}>{item}</div>])
 	}, [])
 
 	return [nodes, addNode] as const
@@ -54,29 +53,19 @@ function useSocketWithCommands(addNode: (node: ReactNode) => void)
 {
 	const socket = useWebSocket()
 
-	useEvent(socket, UnknownCommandEvent, ({command}) => addNode(`Unknown command: ${command}`))
-
 	useEvent(socket, EchoEvent, ({text}) => addNode(text))
 
 	useEvent(socket, SayEvent, ({speakerId, text}) => {fetchGameObject(socket, speakerId).then(character => addNode(`[${character?.props["name"]}] ${text}`))})
 
 	useEvent(socket, HelpEvent, ({commands}) => addNode(<span className={styles.help}>{commands.join(" ")}</span>))
 
-	useEvent(socket, JoinServerEvent, ({id}) => {fetchGameObject(socket, id).then(character => addNode(`${character?.props["name"]} joined`))})
+	useEvent(socket, JoinEvent, ({id}) => {fetchGameObject(socket, id).then(character => addNode(`${character?.props["name"] ?? `#${character?.id}`} joined`))})
 
-	useEvent(socket, LeaveServerEvent, ({id}) => {fetchGameObject(socket, id).then(character => addNode(`${character?.props["name"]} left`))})
+	useEvent(socket, LeaveEvent, ({id}) => {fetchGameObject(socket, id).then(character => addNode(`${character?.props["name"] ?? `#${character?.id}`} left`))})
 
-	useEffect(() =>
-	{
-		{
-			socket.emit(JoinClientEvent)
-		}
+	useEvent(socket, ErrorEvent, ({error}) => addNode(<span className={styles.error}>{error}</span>))
 
-		return () =>
-		{
-			socket.emit(LeaveClientEvent)
-		}
-	}, [socket])
+	useEvent(socket, CreateEvent, ({id}) => addNode(`Created object with ID ${id}`))
 
 	return socket
 }

@@ -11,7 +11,7 @@ export default function LoginInfo()
 
 	return (
 		<div>
-			Logged in as {user.username}{player && <>, playing as {player.props["name"] ?? "unnamed object"} </>} &nbsp; <LogoutButton/> &nbsp;
+			Logged in as {user.username}{player && <>, playing as {player.props["name"] ?? `#${player.id}`} </>} &nbsp; <LogoutButton/> &nbsp;
 		</div>
 	)
 }

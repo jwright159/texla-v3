@@ -4,7 +4,7 @@ import { usePlayerId } from "./player-id"
 import { createCache } from "./context"
 import { GameObject } from "../context"
 
-export const [useGameObject, fetchGameObject] = createCache<GameObject>("game-object")
+export const [useGameObject, fetchGameObject] = createCache<GameObject>("gameObject")
 
 export const usePlayer = () =>
 {

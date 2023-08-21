@@ -6,6 +6,7 @@ import { WebSocketProvider } from "@/lib/client/websocket"
 import { UserIdProvider } from "@/lib/client/user-id"
 import { unsealNextCookie } from "@/lib/server/cookies"
 import { parseUserId } from "@/lib/server/user"
+import { PlayerIdProvider } from "@/lib/client/player-id"
 
 export const metadata: Metadata = {
 	title: "Texla",
@@ -26,7 +27,9 @@ export default async function RootLayout({
 				<ReferrerProvider>
 					<UserIdProvider initialId={userId}>
 						<WebSocketProvider>
-							{children}
+							<PlayerIdProvider>
+								{children}
+							</PlayerIdProvider>
 						</WebSocketProvider>
 					</UserIdProvider>
 				</ReferrerProvider>

@@ -72,7 +72,7 @@ export function createCache<T extends {id: number}>(table: string)
 	async function fetchCachedValue(socket: ClientSocket, id: number | null)
 	{
 		if (!id) return null
-		if (cacheSubscriberCounts[id]) return cache[id]
+		if (cacheSubscriberCounts[id] && id in cache) return cache[id]
 
 		const value = await new Promise<T | null>((resolve, reject) =>
 		{

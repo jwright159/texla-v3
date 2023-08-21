@@ -47,7 +47,7 @@ export function createSubscription<
 	async function getUpdateValue(id: number)
 	{
 		const value = await findUnique(id)
-		return value !== null && selectOutput ? selectOutput(value) : null
+		return value !== null ? selectOutput(value) : null
 	}
 
 	async function sendUpdate(id: number)

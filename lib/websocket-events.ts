@@ -26,14 +26,6 @@ export const RegisterUserEvent = <ClientWebSocketEvent<{username: string, passwo
 	event: "register-user",
 }
 
-export const RegisterCharacterEvent = <ClientWebSocketEvent<{name: string}, number>>{
-	event: "register-character",
-}
-
-export const DeleteCharacterEvent = <ClientWebSocketEvent<{id: number}, number>>{
-	event: "delete-character",
-}
-
 export const SubscribeEvent = (table: string) => <ClientWebSocketEvent<{id: number}>>{
 	event: `subscribe-${table}`,
 }
@@ -50,28 +42,24 @@ export const UpdateEvent = <T>(table: string, id: number) => <ServerWebSocketEve
 	event: `update-${table}-${id}`,
 }
 
-export const JoinServerEvent = <ServerWebSocketEvent<{id: number}>>{
+export const JoinEvent = <ServerWebSocketEvent<{id: number}>>{
 	event: "join",
 }
 
-export const LeaveServerEvent = <ServerWebSocketEvent<{id: number}>>{
+export const LeaveEvent = <ServerWebSocketEvent<{id: number}>>{
 	event: "leave",
 }
 
-export const JoinClientEvent = <ClientWebSocketEvent>{
-	event: "join",
+export const SwitchEvent = <ServerWebSocketEvent<{id: number}>>{
+	event: "switch",
 }
 
-export const LeaveClientEvent = <ClientWebSocketEvent>{
-	event: "leave",
+export const ErrorEvent = <ServerWebSocketEvent<{error: string}>>{
+	event: "err",
 }
 
 export const CommandEvent = <ClientWebSocketEvent<{command: string}>>{
 	event: "command",
-}
-
-export const UnknownCommandEvent = <ServerWebSocketEvent<{command: string}>>{
-	event: "unknown-command",
 }
 
 export const ConnectEvent = <ClientWebSocketEvent & ServerWebSocketEvent>{
@@ -94,6 +82,10 @@ export const EchoEvent = <ServerWebSocketEvent<{text: string}>>{
 	event: "echo",
 }
 
+export const CreateEvent = <ServerWebSocketEvent<{id: number}>>{
+	event: "create",
+}
+
 export interface SocketRoom {
 	room: string;
 }
@@ -102,8 +94,8 @@ export const UpdateRoom = (table: string, id: number): SocketRoom => ({
 	room: `update-${table}-${id}`,
 })
 
-export const RoomRoom = (id: number): SocketRoom => ({
-	room: `room-${id}`,
+export const LocationRoom = (id: number): SocketRoom => ({
+	room: `location-${id}`,
 })
 
 export interface Response<TResponse> {

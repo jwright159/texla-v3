@@ -28,7 +28,7 @@ function CharacterItem({
 })
 {
 	const character = useGameObject(id)
-	return (character?.props["playable"] &&
-		<li>{character.props["name"]}</li>
+	return (character &&
+		<li>{character.props["name"] ?? `#${character.id}`}</li>
 	)
 }
