@@ -86,6 +86,10 @@ export const CreateEvent = <ServerWebSocketEvent<{id: number}>>{
 	event: "create",
 }
 
+export const DeleteEvent = <ServerWebSocketEvent<{id: number}>>{
+	event: "delete",
+}
+
 export interface SocketRoom {
 	room: string;
 }

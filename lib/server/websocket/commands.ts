@@ -1,6 +1,7 @@
-import { CommandEvent, CreateEvent, DisconnectEvent, EchoEvent, ErrorEvent, HelpEvent, JoinEvent, LeaveEvent, LocationRoom, SayEvent, Server, ServerSocket, SwitchEvent } from "../../websocket-events"
+import { CommandEvent, CreateEvent, DeleteEvent, DisconnectEvent, EchoEvent, ErrorEvent, HelpEvent, JoinEvent, LeaveEvent, LocationRoom, SayEvent, Server, ServerSocket, SwitchEvent } from "../../websocket-events"
 import { GameObject } from "@prisma/client"
 import { getSocketUserId } from "./context"
+import { Updater } from "."
 
 export const playingPlayerIds: number[] = []
 
@@ -30,9 +31,17 @@ export default function registerCommands(io: Server, socket: ServerSocket)
 
 		switch: async (text: string) =>
 		{
+			if (text == "out")
+			{
+				if (player) leave()
+				player = null
+				socket.emit(SwitchEvent, {id: 0})
+				return
+			}
+
 			const id = parseInt(text)
 			if (isNaN(id)) return `ID "${text}" is not a number`
-			if (id in playingPlayerIds) `Object ${id} is already being played`
+			if (playingPlayerIds.includes(id)) `Object ${id} is being played`
 
 			const newPlayer = await prisma.gameObject.findUnique({where: {id}})
 			if (!newPlayer) return `No object with ID ${id}`
@@ -48,13 +57,37 @@ export default function registerCommands(io: Server, socket: ServerSocket)
 
 		create: async () =>
 		{
+			const voidroom = await prisma.gameObject.findUnique({where: {id: 1}})
+
 			const user = await getSocketUserId(socket)
 			const newObject = await prisma.gameObject.create({data: {
+				id: voidroom ? undefined : 1,
 				userId: user,
 				locationId: 1,
 			}})
 			socket.emit(CreateEvent, {id: newObject.id})
-		}
+		},
+
+		delete: async (text: string) =>
+		{
+			const id = parseInt(text)
+			if (isNaN(id)) return `ID "${text}" is not a number`
+			if (playingPlayerIds.includes(id)) return `Object ${id} is being played`
+
+			const existingObject = await prisma.gameObject.findUnique({where: {id}, include: {contents: true}})
+			if (!existingObject) return `No object with ID ${id}`
+
+			const objectContainsOnlyItself = existingObject.contents.length == 1 && existingObject.contents[0].id == id
+
+			if (existingObject.contents.length && !objectContainsOnlyItself) return `Object ${id} contains objects`
+
+			const user = await getSocketUserId(socket)
+			if (existingObject.userId != user) return `You do not own object ${id}`
+
+			await prisma.gameObject.delete({where: {id}})
+			socket.emit(DeleteEvent, {id})
+			//socket.emitGameObjectUpdate(existingObject.locationId)
+		},
 	}
 
 	socket.onPermanentAsync(CommandEvent, async ({command}) =>
@@ -66,7 +99,7 @@ export default function registerCommands(io: Server, socket: ServerSocket)
 			if (error) socket.emit(ErrorEvent, {error})
 		}
 		else
-			socket.emit(ErrorEvent, {error: `Unknown command "${command}"`})
+			socket.emit(ErrorEvent, {error: `Unknown command "${commandName}"`})
 	})
 
 	let joined = false
