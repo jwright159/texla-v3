@@ -4,7 +4,6 @@ import { useState, useEffect, ReactNode, createContext, useContext } from "react
 import { io } from "socket.io-client"
 import { useUserId } from "./user-id"
 import { MainPanel } from "@/components/panel"
-import { useCharacterId } from "./character-id"
 import { ClientSocket, ConnectEvent, DisconnectEvent } from "../websocket-events"
 
 const WebSocketContext = createContext<ClientSocket | null>(null)
@@ -20,7 +19,6 @@ export function WebSocketProvider({
 	const [socket, setSocket] = useState<ClientSocket | null>(null)
 	const [connected, setConnected] = useState(false)
 	const userId = useUserId()
-	const characterId = useCharacterId()
 
 	useEffect(() =>
 	{
@@ -42,7 +40,7 @@ export function WebSocketProvider({
 		{
 			socket.disconnect()
 		}
-	}, [userId, characterId])
+	}, [userId])
 
 	return (socket && connected ?
 		<WebSocketContext.Provider value={socket}>

@@ -14,7 +14,7 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
-    "@prisma/client": "^5.0.0",
+    "@prisma/client": "^5.1.1",
     "@types/bcrypt": "^5.0.0",
     "@types/node": "20.4.1",
     "@types/react": "18.2.14",
@@ -41,6 +41,6 @@
     "eslint": "^8.47.0",
     "eslint-plugin-react": "^7.33.1",
     "patch-package": "^8.0.0",
-    "prisma": "^5.0.0"
+    "prisma": "^5.1.1"
   }
 }

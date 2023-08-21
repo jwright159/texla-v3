@@ -5,9 +5,9 @@ import { useRedirectToReferrer } from "./referrer"
 import { DeleteCharacterEvent, RegisterCharacterEvent } from "../websocket-events"
 import { useWebSocketTransition } from "./context"
 
-const CharacterIdContext = createContext<number>(0)
-const SetCharacterIdContext = createContext<(id: number) => void>(() => {})
-export const useCharacterId = () => useContext(CharacterIdContext)
+const PlayerIdContext = createContext<number>(0)
+const SetPlayerIdContext = createContext<(id: number) => void>(() => {})
+export const usePlayerId = () => useContext(PlayerIdContext)
 
 function useFinishSelectCharacter()
 {
@@ -16,7 +16,7 @@ function useFinishSelectCharacter()
 	const [errorText, setErrorText] = useState("")
 	const [isPending, startTransition] = useTransition()
 	const [isRedirecting, setIsRedirecting] = useState(false)
-	const setCharacterId = useContext(SetCharacterIdContext)
+	const setCharacterId = useContext(SetPlayerIdContext)
 
 	async function select(args: object, id: number)
 	{
@@ -93,10 +93,10 @@ export function CharacterIdProvider({
 	const [characterId, setCharacterId] = useState<number>(initialId)
 
 	return (
-		<CharacterIdContext.Provider value={characterId}>
-			<SetCharacterIdContext.Provider value={setCharacterId}>
+		<PlayerIdContext.Provider value={characterId}>
+			<SetPlayerIdContext.Provider value={setCharacterId}>
 				{children}
-			</SetCharacterIdContext.Provider>
-		</CharacterIdContext.Provider>
+			</SetPlayerIdContext.Provider>
+		</PlayerIdContext.Provider>
 	)
 }

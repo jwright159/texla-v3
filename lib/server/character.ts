@@ -53,7 +53,7 @@ export async function parseCharacterId(userId: number, cookieData: {characterId?
 
 	if (!characterId || typeof characterId !== "number") return 0
 
-	const character = await prisma.character.findUnique({
+	const character = await prisma.gameObject.findUnique({
 		where: {
 			id: characterId
 		}

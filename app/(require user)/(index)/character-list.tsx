@@ -1,19 +1,18 @@
 "use client"
 
-import { useCharacter } from "@/lib/client/character"
-import { usePlayerRoom } from "@/lib/client/room"
+import { useGameObject, usePlayerLocation } from "@/lib/client/game-object"
 import styles from "./character-list.module.css"
 import pageStyles from "./page.module.css"
 
 export default function CharacterList()
 {
-	const room = usePlayerRoom()
+	const location = usePlayerLocation()
 	
 	return (
 		<div className={`${pageStyles.bordered} ${styles.characters}`}>
-			{ room ?
+			{ location ?
 				<ul>
-					{room.characterIds.map(characterId => <CharacterItem key={characterId} id={characterId}/>)}
+					{location.contentsIds.map(contentsId => <CharacterItem key={contentsId} id={contentsId}/>)}
 				</ul>
 				:
 				"Nobody came."
@@ -28,8 +27,8 @@ function CharacterItem({
 	id: number,
 })
 {
-	const character = useCharacter(id)
-	return (
-		<li>{character?.name ?? "Loading character..."}</li>
+	const character = useGameObject(id)
+	return (character?.props["playable"] &&
+		<li>{character.props["name"]}</li>
 	)
 }

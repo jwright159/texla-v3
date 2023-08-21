@@ -2,7 +2,7 @@
 
 import styles from "./page.module.css"
 import LoginInfo from "./login-info"
-import CharacterList from "./character-list"
+import ContentsList from "./character-list"
 import CommandPane from "./command-pane"
 import RoomTitle from "./room-title"
 
@@ -14,7 +14,7 @@ export default function Index()
 
 			<div className={styles.game}>
 				<CommandPane/>
-				<CharacterList/>
+				<ContentsList/>
 			</div>
 
 			<LoginInfo/>

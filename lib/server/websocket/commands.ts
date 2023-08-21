@@ -2,9 +2,12 @@ import { getSocketCharacter } from "./context"
 import { loggedInCharacterIds } from "../character"
 import { CommandEvent, DisconnectEvent, EchoEvent, HelpEvent, JoinClientEvent, JoinServerEvent, LeaveClientEvent, LeaveServerEvent, RoomRoom, SayEvent, Server, ServerSocket, UnknownCommandEvent } from "../../websocket-events"
 import { Updater } from "."
+import { GameObject } from "@prisma/client"
 
 export default function registerCommands(io: Server, socket: ServerSocket)
 {
+	let character: GameObject | null = null
+
 	const commands: Record<string, (args: string) => void | Promise<void>> = {
 		echo: (text: string) =>
 		{
@@ -23,38 +26,9 @@ export default function registerCommands(io: Server, socket: ServerSocket)
 		},
 	}
 
-	let attemptedAuth = false
-	let authenticated = false
 	socket.use(([event], next) => void (async () =>
-	{
-		if (!attemptedAuth)
-		{
-			attemptedAuth = true
-			const character = await getSocketCharacter(socket)
-			authenticated = !!character
-
-			if (character)
-			{
-				if (character.id in loggedInCharacterIds)
-				{
-					authenticated = false
-				}
-				else
-				{
-					{
-						loggedInCharacterIds.push(character.id)
-						{(<Updater><unknown>socket).emitRoomUpdate(character.roomId)}
-					}
-					socket.onPermanent(DisconnectEvent, () =>
-					{
-						{(<Updater><unknown>socket).emitRoomUpdate(character.roomId)}
-						loggedInCharacterIds.splice(loggedInCharacterIds.indexOf(character.id), 1)
-					})
-				}
-			}
-		}
-		
-		if (!authenticated && (
+	{	
+		if (!character && (
 			event === CommandEvent.event ||
 			event === JoinClientEvent.event ||
 			event === LeaveClientEvent.event

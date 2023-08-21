@@ -1,20 +1,13 @@
 export interface User {
-	id: number;
-	username: string;
-	characterIds: number[];
-	roomIds: number[];
+	id: number
+	username: string
+	objectIds: number[]
 }
 
-export interface Character {
-	id: number;
-	name: string;
-	roomId: number;
-	userId: number;
-}
-
-export interface Room {
-	id: number;
-	userId: number;
-	name: string;
-	characterIds: number[];
+export interface GameObject {
+	id: number
+	userId: number
+	contentsIds: number[]
+	locationId: number
+	props: Record<string, string>
 }

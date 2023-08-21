@@ -1,6 +1,6 @@
 "use client"
 
-import { fetchCharacter } from "@/lib/client/character"
+import { fetchGameObject } from "@/lib/client/game-object"
 import { useWebSocket } from "@/lib/client/websocket"
 import { CommandEvent, EchoEvent, HelpEvent, JoinClientEvent, JoinServerEvent, LeaveClientEvent, LeaveServerEvent, SayEvent, UnknownCommandEvent, useEvent } from "@/lib/websocket-events"
 import { useRef, useEffect, useState, ReactElement, ReactNode, useCallback, DependencyList } from "react"
@@ -58,13 +58,13 @@ function useSocketWithCommands(addNode: (node: ReactNode) => void)
 
 	useEvent(socket, EchoEvent, ({text}) => addNode(text))
 
-	useEvent(socket, SayEvent, ({speakerId, text}) => {fetchCharacter(socket, speakerId).then(character => addNode(`[${character?.name}] ${text}`))})
+	useEvent(socket, SayEvent, ({speakerId, text}) => {fetchGameObject(socket, speakerId).then(character => addNode(`[${character?.props["name"]}] ${text}`))})
 
 	useEvent(socket, HelpEvent, ({commands}) => addNode(<span className={styles.help}>{commands.join(" ")}</span>))
 
-	useEvent(socket, JoinServerEvent, ({id}) => {fetchCharacter(socket, id).then(character => addNode(`${character?.name} joined`))})
+	useEvent(socket, JoinServerEvent, ({id}) => {fetchGameObject(socket, id).then(character => addNode(`${character?.props["name"]} joined`))})
 
-	useEvent(socket, LeaveServerEvent, ({id}) => {fetchCharacter(socket, id).then(character => addNode(`${character?.name} left`))})
+	useEvent(socket, LeaveServerEvent, ({id}) => {fetchGameObject(socket, id).then(character => addNode(`${character?.props["name"]} left`))})
 
 	useEffect(() =>
 	{

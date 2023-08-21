@@ -10,7 +10,6 @@ export interface CookieData
 {
 	userId?: number,
 	password?: string,
-	characterId?: number,
 }
 
 export async function sealCookie(data: CookieData, currentCookie: string)

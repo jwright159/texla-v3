@@ -2,95 +2,32 @@ import { FetchEvent, Server, ServerSocket, SubscribeEvent, UnsubscribeEvent, Upd
 import { PrismaClient } from "@prisma/client"
 
 export type PrismaTable<Original, Include, IncludeResult> = {
-	findUnique: (args: {where: {id: number}, include: Include | null}) => Promise<IncludeResult | null>,
-	update: (args: {where: {id: number}, include: Include | null, data: Original}) => Promise<IncludeResult>,
+	findUnique: (args: {where: {id: number}, include: Include}) => Promise<IncludeResult | null>,
+	update: (args: {where: {id: number}, include: Include, data: Original}) => Promise<IncludeResult>,
 }
-export type PrismaClientWithTable<TableName extends string, Original, Include extends object = object, IncludeResult extends Original = Original> = PrismaClient & {[x in TableName]: PrismaTable<Original, Include, IncludeResult>}
-
-export const createSubscriptionFromModelIncludingIds = <
-	TOriginal extends {id: number},
-	TOutput extends object,
-> () => <
-	TTableName extends string,
-	const TMap extends {[x: string]: string},
-	TInclude extends {[x in keyof TMap]: boolean},
-	TIncludeResult extends TOriginal & {[x in keyof TMap]: {id: number}[]},
-	TFinal extends TOriginal & {[x in TMap[keyof TMap]]: number[]},
->(
-			io: Server,
-			socket: ServerSocket,
-			prisma: PrismaClientWithTable<TTableName, TOriginal, TInclude, TIncludeResult>,
-			table: TTableName,
-			map: TMap,
-			selectOutput: (value: TFinal) => TOutput,
-		) =>
-{
-	return createSubscriptionFromModelIncluding<TOriginal, TOutput>()<TTableName, TInclude, TIncludeResult, TFinal>(
-		io,
-		socket,
-		prisma,
-		table,
-		Object.assign({}, ...Object.keys(map).map(key => ({[key]: true}))),
-		(result) => Object.fromEntries([
-			...Object.entries(result).filter(([key]) => !Object.keys(map).includes(key)),
-			...Object.entries(map).map(([key, value]) => [value, result[key].map(v => v.id)]),
-		]),
-		selectOutput,
-	)
-}
-
-export const createSubscriptionFromModelIncluding = <
-	TOriginal extends {id: number},
-	TOutput extends object,
->() => <
-	TTableName extends string,
-	TInclude extends object,
-	TIncludeResult extends TOriginal,
-	TFinal extends TOriginal,
->(
-			io: Server,
-			socket: ServerSocket,
-			prisma: PrismaClientWithTable<TTableName, TOriginal, TInclude, TIncludeResult>,
-			table: TTableName,
-			include: TInclude,
-			includeMap: (value: TIncludeResult) => TFinal,
-			selectOutput: (value: TFinal) => TOutput,
-		) =>
-{
-	async function findUniqueMapped(id: number)
-	{
-		const value = id ? await prisma[table].findUnique({where: {id}, include}) : null
-		return value ? includeMap(value) : null
-	}
-	async function updateMapped(id: number, data: TOriginal)
-	{
-		const value = id ? await prisma[table].update({where: {id}, include, data}) : null
-		return value ? includeMap(value) : null
-	}
-	return createSubscription<TFinal, TOutput>(io, socket, table, findUniqueMapped, updateMapped, selectOutput)
-}
+export type PrismaClientWithTable<TTableName extends TableName, Original, Include extends object = object, IncludeResult extends Original = Original> = PrismaClient & {[x in TTableName]: PrismaTable<Original, Include, IncludeResult>}
+export type TableName = string & keyof PrismaClient
 
 export const createSubscriptionFromModel = <
 	TOriginal extends {id: number},
 	TOutput extends object,
+	TIncludeRes extends {[x: string]: object},
 >() => <
-	TTableName extends string,
+	TTableName extends TableName,
+	TInclude extends {[x in keyof TIncludeRes]: true},
+	TIncludeResult extends TOriginal & TIncludeRes,
 >(
 			io: Server,
 			socket: ServerSocket,
-			prisma: PrismaClientWithTable<TTableName, TOriginal>,
+			prismaTable: PrismaTable<TOriginal, TInclude, TIncludeResult>,
 			table: TTableName,
-			selectOutput: (value: TOriginal) => TOutput,
+			include: TInclude,
+			selectOutput: (value: TIncludeResult) => TOutput,
 		) =>
 {
-	return createSubscription<TOriginal, TOutput>(
-		io,
-		socket,
-		table,
-		async (id) => id ? await prisma[table].findUnique({where: {id}, include: null}) : null,
-		async (id, data) => id ? await prisma[table].update({where: {id}, include: null, data}) : null,
-		selectOutput
-	)
+	const findUniqueMapped = async (id: number) => await prismaTable.findUnique({where: {id}, include})
+	const updateMapped = async (id: number, data: TOriginal) => await prismaTable.update({where: {id}, include, data})
+	return createSubscription<TIncludeResult, TOutput>(io, socket, table, findUniqueMapped, updateMapped, selectOutput)
 }
 
 export function createSubscription<
