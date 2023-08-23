@@ -1,4 +1,4 @@
-import { CommandEvent, CreateEvent, DeleteEvent, DisconnectEvent, EchoEvent, HelpEvent, IdNaNError, JoinEvent, LeaveEvent, LocationRoom, NotPlayingError, ObjectBeingPlayedError, ObjectNotEmptyError, ObjectNotFoundError, PermissionError, SayEvent, Server, ServerSocket, ServerWebSocketEvent, SwitchEvent, UnknownCommandError } from "../../websocket-events"
+import { CommandEvent, CreateEvent, DeleteEvent, DisconnectEvent, EchoEvent, HelpEvent, IdNaNError, JoinEvent, LeaveEvent, ListPlayersEvent, LocationRoom, NotPlayingError, ObjectBeingPlayedError, ObjectNotEmptyError, ObjectNotFoundError, PermissionError, SayEvent, Server, ServerEmit, ServerSocket, ServerWebSocketEvent, SwitchEvent, UnknownCommandError } from "../../websocket-events"
 import { GameObject } from "@prisma/client"
 import { getSocketUserId } from "./context"
 import { Updater } from "."
@@ -9,22 +9,27 @@ export default function registerCommands(io: Server, socket: ServerSocket, updat
 {
 	let player: GameObject | null = null
 
+	const sendError: ServerEmit<boolean> = <TArgs>(
+		event: ServerWebSocketEvent<TArgs>,
+		args?: TArgs,
+	) =>
+	{
+		socket.emit(event, args!)
+		return true
+	}
+
 	const check = {
-		sendError: <TEvent extends ServerWebSocketEvent<TArgs, void>, TArgs>(event: TEvent, args: TArgs) =>
-		{
-			socket.emit(event, args)
-			return true
-		},
+		idIsNaN: (id: number, idText: string) => isNaN(id) && sendError(IdNaNError, {id: idText}),
 
-		isIdNaN: (id: number, idText: string) => isNaN(id) && check.sendError(IdNaNError, {id: idText}),
-		
-		isObjectBeingPlayed: (id: number) => playingPlayerIds.includes(id) && check.sendError(ObjectBeingPlayedError, {id}),
+		objectIsBeingPlayed: (id: number) => playingPlayerIds.includes(id) && sendError(ObjectBeingPlayedError, {id}),
 
-		isObjectNotFound: (id: number, obj: GameObject | null): obj is null => !obj && check.sendError(ObjectNotFoundError, {id}),
+		objectIsntFound: (id: number, obj: GameObject | null): obj is null => !obj && sendError(ObjectNotFoundError, {id}),
 
-		objectContainsOtherObjects: (obj: GameObject & {contents: GameObject[]}) => obj.contents.length && !(obj.contents.length == 1 && obj.contents[0].id == obj.id) && check.sendError(ObjectNotEmptyError, {id: obj.id}),
+		objectContainsOtherObjects: (obj: GameObject & {contents: GameObject[]}) => obj.contents.length && !(obj.contents.length == 1 && obj.contents[0].id == obj.id) && sendError(ObjectNotEmptyError, {id: obj.id}),
 
-		userDoesntOwnObject: (userId: number, obj: GameObject) => obj.userId != userId && check.sendError(PermissionError, {id: obj.id})
+		userDoesntOwnObject: (userId: number, obj: GameObject) => obj.userId != userId && sendError(PermissionError, {id: obj.id}),
+
+		userIsntPlaying: (player: GameObject | null): player is null => !player && sendError(NotPlayingError),
 	} as const
 
 	const commands: Record<string, (args: string) => void | Promise<void>> = {
@@ -40,7 +45,7 @@ export default function registerCommands(io: Server, socket: ServerSocket, updat
 
 		say: async (text: string) =>
 		{
-			if (!player) return socket.emit(NotPlayingError)
+			if (check.userIsntPlaying(player)) return
 
 			io.in(LocationRoom(player.locationId)).emit(SayEvent, {speakerId: player.id, text})
 		},
@@ -61,11 +66,11 @@ export default function registerCommands(io: Server, socket: ServerSocket, updat
 		delete: async (text: string) =>
 		{
 			const id = parseInt(text)
-			if (check.isIdNaN(id, text)) return
-			if (check.isObjectBeingPlayed(id)) return
+			if (check.idIsNaN(id, text)) return
+			if (check.objectIsBeingPlayed(id)) return
 
 			const existingObject = await prisma.gameObject.findUnique({where: {id}, include: {contents: true}})
-			if (check.isObjectNotFound(id, existingObject)) return
+			if (check.objectIsntFound(id, existingObject)) return
 
 			if (check.objectContainsOtherObjects(existingObject)) return
 
@@ -80,7 +85,8 @@ export default function registerCommands(io: Server, socket: ServerSocket, updat
 		switch: async (text: string) =>
 		{
 			if (text == "out") switchOut()
-			else await switchIn()
+			else if (text) await switchIn()
+			else await listSwitches()
 			
 			function switchOut()
 			{
@@ -92,11 +98,11 @@ export default function registerCommands(io: Server, socket: ServerSocket, updat
 			async function switchIn()
 			{
 				const id = parseInt(text)
-				if (check.isIdNaN(id, text)) return
-				if (check.isObjectBeingPlayed(id)) return
+				if (check.idIsNaN(id, text)) return
+				if (check.objectIsBeingPlayed(id)) return
 
 				const newPlayer = await prisma.gameObject.findUnique({where: {id}})
-				if (check.isObjectNotFound(id, newPlayer)) return
+				if (check.objectIsntFound(id, newPlayer)) return
 
 				const userId = await getSocketUserId(socket)
 				if (check.userDoesntOwnObject(userId, newPlayer)) return
@@ -105,6 +111,15 @@ export default function registerCommands(io: Server, socket: ServerSocket, updat
 				player = newPlayer
 				socket.emit(SwitchEvent, {id})
 				join()
+			}
+
+			async function listSwitches()
+			{
+				const userId = await getSocketUserId(socket)
+				const objects = await prisma.gameObject.findMany({where: {userId}, include: {props: {where: {name: "playable"}}}})
+				const players = objects//.filter(obj => obj.props["playable"])
+				const playerIds = players.map(player => player.id)
+				socket.emit(ListPlayersEvent, {ids: playerIds})
 			}
 		},
 	}

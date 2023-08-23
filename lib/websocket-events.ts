@@ -54,6 +54,10 @@ export const SwitchEvent = <ServerWebSocketEvent<{id: number}>>{
 	event: "switch",
 }
 
+export const ListPlayersEvent = <ServerWebSocketEvent<{ids: number[]}>>{
+	event: "list-players",
+}
+
 export const CommandEvent = <ClientWebSocketEvent<{command: string}>>{
 	event: "command",
 }
@@ -201,6 +205,23 @@ export function useEvent<TArgs>(
 	}, [socket, event, listener])
 }
 
+export type ServerEmit<TReturn = void> = {
+	(
+		event: ServerWebSocketEvent<void, void>,
+	): TReturn
+
+	<TArgs>(
+		event: ServerWebSocketEvent<TArgs, void>,
+		args: TArgs,
+	): TReturn
+
+	<TArgs, TResponse>(
+		event: ServerWebSocketEvent<TArgs, TResponse>,
+		args: TArgs,
+		callback: (response: Response<TResponse>) => void,
+	): TReturn
+}
+
 export class ServerSocket
 {
 	socket: BaseServerSocket
@@ -210,23 +231,11 @@ export class ServerSocket
 		this.socket = socket
 	}
 
-	emit(
-		event: ServerWebSocketEvent<void, void>,
-	): void
-	emit<TArgs>(
-		event: ServerWebSocketEvent<TArgs, void>,
-		args: TArgs,
-	): void
-	emit<TArgs, TResponse>(
-		event: ServerWebSocketEvent<TArgs, TResponse>,
-		args: TArgs,
-		callback: (response: Response<TResponse>) => void,
-	): void
-	emit<TArgs, TResponse>(
+	emit: ServerEmit = <TArgs, TResponse>(
 		event: ServerWebSocketEvent<TArgs, TResponse>,
 		args?: TArgs,
 		callback?: (response: Response<TResponse>) => void,
-	)
+	) =>
 	{
 		this.socket.emit(event.event, args, callback)
 	}
@@ -317,23 +326,11 @@ export class ServerRoomSocket
 		this.socket = socket
 	}
 
-	emit(
-		event: ServerWebSocketEvent<void, void>,
-	): void
-	emit<TArgs>(
-		event: ServerWebSocketEvent<TArgs, void>,
-		args: TArgs,
-	): void
-	emit<TArgs, TResponse>(
-		event: ServerWebSocketEvent<TArgs, TResponse>,
-		args: TArgs,
-		callback: (response: Response<TResponse>) => void,
-	): void
-	emit<TArgs, TResponse>(
+	emit: ServerEmit = <TArgs, TResponse>(
 		event: ServerWebSocketEvent<TArgs, TResponse>,
 		args?: TArgs,
 		callback?: (response: Response<TResponse>) => void,
-	)
+	) =>
 	{
 		this.socket.emit(event.event, args, callback)
 	}

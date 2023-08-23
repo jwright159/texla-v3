@@ -26,19 +26,3 @@
 {
 	list-style-type: none;
 }
-
-.command
-{
-	color: gray;
-	font-style: italic;
-}
-
-.help
-{
-	color: cadetblue;
-}
-
-.error
-{
-	color: red;
-}

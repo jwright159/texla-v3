@@ -2,10 +2,11 @@
 
 import { fetchGameObject } from "@/lib/client/game-object"
 import { useWebSocket } from "@/lib/client/websocket"
-import { CommandEvent, CreateEvent, DeleteEvent, EchoEvent, HelpEvent, IdNaNError, JoinEvent, LeaveEvent, NotPlayingError, ObjectBeingPlayedError, ObjectNotEmptyError, ObjectNotFoundError, PermissionError, SayEvent, UnknownCommandError, useEvent } from "@/lib/websocket-events"
+import { CommandEvent, CreateEvent, DeleteEvent, EchoEvent, HelpEvent, IdNaNError, JoinEvent, LeaveEvent, ListPlayersEvent, NotPlayingError, ObjectBeingPlayedError, ObjectNotEmptyError, ObjectNotFoundError, PermissionError, SayEvent, UnknownCommandError, useEvent } from "@/lib/websocket-events"
 import { useRef, useEffect, useState, ReactElement, ReactNode, useCallback, DependencyList } from "react"
 import styles from "./command-pane.module.css"
 import pageStyles from "./page.module.css"
+import messageStyles from "./messages.module.css"
 import InputBox from "./input-box"
 import { GameObject } from "@/lib/context"
 
@@ -29,7 +30,7 @@ export default function CommandPane()
 			<InputBox
 				onSend={(command) =>
 				{
-					addNode(<span className={styles.command}>&gt;{command}</span>)
+					addNode(<span className={messageStyles.command}>&gt;{command}</span>)
 					socket.emit(CommandEvent, {command})
 				}}
 			/>
@@ -54,37 +55,39 @@ const getDisplayName = (gameObject: GameObject | null) => gameObject?.props["nam
 
 function useSocketWithCommands(addNode: (node: ReactNode) => void)
 {
-	const addErrorNode = (node: ReactNode) => addNode(<span className={styles.error}>{node}</span>)
+	const addStyledNode = (style: string, node: ReactNode) => addNode(<span className={messageStyles[style]}>{node}</span>)
 
 	const socket = useWebSocket()
 
-	useEvent(socket, EchoEvent, ({text}) => addNode(text))
+	useEvent(socket, EchoEvent, ({text}) => addStyledNode("command", text))
 
-	useEvent(socket, SayEvent, ({speakerId, text}) => {fetchGameObject(socket, speakerId).then(character => addNode(`[${getDisplayName(character)}] ${text}`))})
+	useEvent(socket, SayEvent, ({speakerId, text}) => {fetchGameObject(socket, speakerId).then(player => addNode(`[${getDisplayName(player)}] ${text}`))})
 
-	useEvent(socket, HelpEvent, ({commands}) => addNode(<span className={styles.help}>{commands.join(" ")}</span>))
+	useEvent(socket, HelpEvent, ({commands}) => addStyledNode("help", commands.join(" ")))
 
-	useEvent(socket, JoinEvent, ({id}) => {fetchGameObject(socket, id).then(character => addNode(`${getDisplayName(character)} joined`))})
+	useEvent(socket, JoinEvent, ({id}) => {fetchGameObject(socket, id).then(player => addNode(`-- ${getDisplayName(player)} joined --`))})
 
-	useEvent(socket, LeaveEvent, ({id}) => {fetchGameObject(socket, id).then(character => addNode(`${getDisplayName(character)} left`))})
+	useEvent(socket, LeaveEvent, ({id}) => {fetchGameObject(socket, id).then(player => addNode(`-- ${getDisplayName(player)} left --`))})
 
-	useEvent(socket, CreateEvent, ({id}) => addNode(`Created object with ID #${id}`))
+	useEvent(socket, ListPlayersEvent, ({ids}) => {Promise.all(ids.map(id => fetchGameObject(socket, id))).then(players => addStyledNode("command", "Possible players: " + players.map(player => player ? player.props["name"] ? `${player.props["name"]} (#${player.id})` : `#${player.id}` : "#null").join(", ")))})
 
-	useEvent(socket, DeleteEvent, ({id}) => addNode(`Deleted object with ID #${id}`))
+	useEvent(socket, CreateEvent, ({id}) => addStyledNode("command", `Created object with ID #${id}`))
 
-	useEvent(socket, UnknownCommandError, ({command}) => addErrorNode(`Unknown command "${command}"`))
+	useEvent(socket, DeleteEvent, ({id}) => addStyledNode("command", `Deleted object with ID #${id}`))
 
-	useEvent(socket, NotPlayingError, () => addErrorNode("Not playing - use switch command"))
+	useEvent(socket, UnknownCommandError, ({command}) => addStyledNode("error", `Unknown command "${command}"`))
 
-	useEvent(socket, IdNaNError, ({id}) => addErrorNode(`ID "${id}" is not a number`))
+	useEvent(socket, NotPlayingError, () => addStyledNode("error", "Not playing, use switch command to select a player"))
 
-	useEvent(socket, ObjectBeingPlayedError, ({id}) => addErrorNode(`Object #${id} is being played`))
+	useEvent(socket, IdNaNError, ({id}) => addStyledNode("error", `ID "${id}" is not a number`))
 
-	useEvent(socket, ObjectNotFoundError, ({id}) => addErrorNode(`No object with ID #${id}`))
+	useEvent(socket, ObjectBeingPlayedError, ({id}) => addStyledNode("error", `Object #${id} is being played`))
 
-	useEvent(socket, PermissionError, ({id}) => addErrorNode(`You do not own object ${id}`))
+	useEvent(socket, ObjectNotFoundError, ({id}) => addStyledNode("error", `No object with ID #${id}`))
 
-	useEvent(socket, ObjectNotEmptyError, ({id}) => addErrorNode(`Object ${id} contains other objects`))
+	useEvent(socket, PermissionError, ({id}) => addStyledNode("error", `You do not own object ${id}`))
+
+	useEvent(socket, ObjectNotEmptyError, ({id}) => addStyledNode("error", `Object ${id} contains other objects`))
 
 	return socket
 }
