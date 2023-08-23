@@ -54,10 +54,6 @@ export const SwitchEvent = <ServerWebSocketEvent<{id: number}>>{
 	event: "switch",
 }
 
-export const ErrorEvent = <ServerWebSocketEvent<{error: string}>>{
-	event: "err",
-}
-
 export const CommandEvent = <ClientWebSocketEvent<{command: string}>>{
 	event: "command",
 }
@@ -88,6 +84,34 @@ export const CreateEvent = <ServerWebSocketEvent<{id: number}>>{
 
 export const DeleteEvent = <ServerWebSocketEvent<{id: number}>>{
 	event: "delete",
+}
+
+export const UnknownCommandError = <ServerWebSocketEvent<{command: string}>>{
+	event: "unknown-command-error",
+}
+
+export const NotPlayingError = <ServerWebSocketEvent>{
+	event: "not-playing-error",
+}
+
+export const IdNaNError = <ServerWebSocketEvent<{id: string}>>{
+	event: "id-nan-error",
+}
+
+export const ObjectBeingPlayedError = <ServerWebSocketEvent<{id: number}>>{
+	event: "object-being-played-error",
+}
+
+export const ObjectNotFoundError = <ServerWebSocketEvent<{id: number}>>{
+	event: "object-not-found-error",
+}
+
+export const PermissionError = <ServerWebSocketEvent<{id: number}>>{
+	event: "permission-error",
+}
+
+export const ObjectNotEmptyError = <ServerWebSocketEvent<{id: number}>>{
+	event: "object-not-empty-error",
 }
 
 export interface SocketRoom {

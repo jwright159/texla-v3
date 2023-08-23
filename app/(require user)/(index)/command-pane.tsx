@@ -2,7 +2,7 @@
 
 import { fetchGameObject } from "@/lib/client/game-object"
 import { useWebSocket } from "@/lib/client/websocket"
-import { CommandEvent, CreateEvent, DeleteEvent, EchoEvent, ErrorEvent, HelpEvent, JoinEvent, LeaveEvent, SayEvent, useEvent } from "@/lib/websocket-events"
+import { CommandEvent, CreateEvent, DeleteEvent, EchoEvent, HelpEvent, IdNaNError, JoinEvent, LeaveEvent, NotPlayingError, ObjectBeingPlayedError, ObjectNotEmptyError, ObjectNotFoundError, PermissionError, SayEvent, UnknownCommandError, useEvent } from "@/lib/websocket-events"
 import { useRef, useEffect, useState, ReactElement, ReactNode, useCallback, DependencyList } from "react"
 import styles from "./command-pane.module.css"
 import pageStyles from "./page.module.css"
@@ -54,6 +54,8 @@ const getDisplayName = (gameObject: GameObject | null) => gameObject?.props["nam
 
 function useSocketWithCommands(addNode: (node: ReactNode) => void)
 {
+	const addErrorNode = (node: ReactNode) => addNode(<span className={styles.error}>{node}</span>)
+
 	const socket = useWebSocket()
 
 	useEvent(socket, EchoEvent, ({text}) => addNode(text))
@@ -66,11 +68,23 @@ function useSocketWithCommands(addNode: (node: ReactNode) => void)
 
 	useEvent(socket, LeaveEvent, ({id}) => {fetchGameObject(socket, id).then(character => addNode(`${getDisplayName(character)} left`))})
 
-	useEvent(socket, ErrorEvent, ({error}) => addNode(<span className={styles.error}>{error}</span>))
+	useEvent(socket, CreateEvent, ({id}) => addNode(`Created object with ID #${id}`))
 
-	useEvent(socket, CreateEvent, ({id}) => addNode(`Created object with ID ${id}`))
+	useEvent(socket, DeleteEvent, ({id}) => addNode(`Deleted object with ID #${id}`))
 
-	useEvent(socket, DeleteEvent, ({id}) => addNode(`Deleted object with ID ${id}`))
+	useEvent(socket, UnknownCommandError, ({command}) => addErrorNode(`Unknown command "${command}"`))
+
+	useEvent(socket, NotPlayingError, () => addErrorNode("Not playing - use switch command"))
+
+	useEvent(socket, IdNaNError, ({id}) => addErrorNode(`ID "${id}" is not a number`))
+
+	useEvent(socket, ObjectBeingPlayedError, ({id}) => addErrorNode(`Object #${id} is being played`))
+
+	useEvent(socket, ObjectNotFoundError, ({id}) => addErrorNode(`No object with ID #${id}`))
+
+	useEvent(socket, PermissionError, ({id}) => addErrorNode(`You do not own object ${id}`))
+
+	useEvent(socket, ObjectNotEmptyError, ({id}) => addErrorNode(`Object ${id} contains other objects`))
 
 	return socket
 }

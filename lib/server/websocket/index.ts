@@ -39,10 +39,12 @@ function setupWebSocket(io: Server, socket: ServerSocket)
 		props: Object.fromEntries(gameObject.props.map(prop => [prop.name, prop.value])),
 	}))
 
-	{(<Updater><unknown>socket).emitUserUpdate = emitUserUpdate}
-	{(<Updater><unknown>socket).emitGameObjectUpdate = emitGameObjectUpdate}
+	const updater: Updater = {
+		emitUserUpdate,
+		emitGameObjectUpdate,
+	}
 
 	registerRequests(io, socket)
 	registerUserAuth(io, socket)
-	registerCommands(io, socket)
+	registerCommands(io, socket, updater)
 }
